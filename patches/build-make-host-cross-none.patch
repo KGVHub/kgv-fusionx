@@ -1,0 +1,19 @@
+diff --git a/core/envsetup.mk b/core/envsetup.mk
+index d116aaf..986af37 100644
+--- a/core/envsetup.mk
++++ b/core/envsetup.mk
+@@ -149,7 +149,13 @@ HOST_OS_EXTRA := $(subst $(space),-,$(HOST_OS_EXTRA))
+ BUILD_OS := $(HOST_OS)
+ 
+ # We can do the cross-build only on Linux
+-ifeq ($(HOST_OS),linux)
++# HOST_CROSS_OS=none turns cross-host (Windows) variants off entirely, which
++# shrinks the Soong module graph on low-memory build hosts.
++ifeq ($(HOST_CROSS_OS),none)
++  HOST_CROSS_OS :=
++  HOST_CROSS_ARCH :=
++  HOST_CROSS_2ND_ARCH :=
++else ifeq ($(HOST_OS),linux)
+   # Windows has been the default host_cross OS
+   ifeq (,$(filter-out windows,$(HOST_CROSS_OS)))
+     # We can only create static host binaries for Linux, so if static host
