@@ -4,9 +4,14 @@
 # usage: prune-tree.sh [--undo]
 set -euo pipefail
 SRC=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../fusionx" && pwd)
-DIRS="cts platform_testing device/google hardware/google
+DIRS="cts/apps cts/common cts/development cts/helpers cts/hostsidetests cts/suite cts/tests cts/tools
+      platform_testing device/google hardware/google
       device/generic/goldfish device/generic/goldfish-opengl device/generic/car
-      device/generic/trusty external/crosvm development
+      device/generic/trusty external/crosvm
+      development/apps development/build development/cmds development/gki development/gsi
+      development/host development/ide development/python-packages development/samples
+      development/sdk_overlay development/sys-img development/testrunner development/tools
+      development/vendor_snapshot development/vndk
       test/catbox test/cts-root test/framework test/mlts test/mts test/vts
       tools/tradefederation tools/asuite tools/test tools/acloud
       frameworks/base/tests prebuilts/vndk

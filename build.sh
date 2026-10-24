@@ -55,7 +55,7 @@ export GOMAXPROCS=${GOMAXPROCS:-4}
 export BLUEPRINT_COMPACT_ACTIONS=${BLUEPRINT_COMPACT_ACTIONS:-1}
 # Never create test, benchmark and fuzz modules (build/blueprint patch): no
 # image installs them and they were about 12k of the 91k module variants.
-SKIP_TYPES="cc_test cc_test_host cc_test_library cc_benchmark cc_benchmark_host cc_fuzz
+SKIP_TYPES="cc_test cc_test_host cc_benchmark cc_benchmark_host cc_fuzz
   cc_prebuilt_test_library_shared art_cc_test art_cc_test_library art_apex_test_host apex_test
   rust_test rust_test_host rust_benchmark rust_benchmark_host rust_fuzz sh_test sh_test_host
   java_test java_test_host java_test_import java_test_helper_library java_fuzz_host
