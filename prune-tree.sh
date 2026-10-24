@@ -7,8 +7,11 @@ SRC=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../fusionx" && pwd)
 DIRS="cts platform_testing device/google hardware/google
       device/generic/goldfish device/generic/goldfish-opengl device/generic/car
       device/generic/trusty external/crosvm development
-      test/catbox test/cts-root test/framework test/mlts test/mts test/vts test/vts-testcase
-      tools/tradefederation tools/asuite tools/test tools/acloud"
+      test/catbox test/cts-root test/framework test/mlts test/mts test/vts
+      tools/tradefederation tools/asuite tools/test tools/acloud
+      frameworks/base/tests prebuilts/vndk
+      hardware/qcom-caf/msm8996 hardware/qcom-caf/msm8998 hardware/qcom-caf/sdm660 hardware/qcom-caf/sdm845
+      hardware/qcom-caf/sm8150 hardware/qcom-caf/sm8250 hardware/qcom-caf/sm8350 hardware/qcom-caf/sm8450 hardware/qcom-caf/sm8550"
 for d in $DIRS; do
     [ -d "$SRC/$d" ] || continue
     if [ "${1:-}" = --undo ]; then rm -f "$SRC/$d/.find-ignore"; echo "unpruned $d"

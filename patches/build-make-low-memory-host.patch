@@ -1,5 +1,5 @@
 diff --git a/core/envsetup.mk b/core/envsetup.mk
-index d116aaf..986af37 100644
+index d116aaf..aa99ad8 100644
 --- a/core/envsetup.mk
 +++ b/core/envsetup.mk
 @@ -149,7 +149,13 @@ HOST_OS_EXTRA := $(subst $(space),-,$(HOST_OS_EXTRA))
@@ -17,3 +17,15 @@ index d116aaf..986af37 100644
    # Windows has been the default host_cross OS
    ifeq (,$(filter-out windows,$(HOST_CROSS_OS)))
      # We can only create static host binaries for Linux, so if static host
+@@ -193,6 +199,11 @@ ifeq ($(HOST_OS),darwin)
+   HOST_2ND_ARCH :=
+ endif
+ 
++# Low-memory hosts: HOST_2ND_ARCH=none drops the 32-bit host variants.
++ifeq ($(HOST_2ND_ARCH_OVERRIDE),none)
++  HOST_2ND_ARCH :=
++endif
++
+ HOST_2ND_ARCH_VAR_PREFIX := 2ND_
+ HOST_2ND_ARCH_MODULE_SUFFIX := _32
+ HOST_CROSS_2ND_ARCH_VAR_PREFIX := 2ND_
