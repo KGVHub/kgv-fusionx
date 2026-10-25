@@ -32,13 +32,19 @@ final class LanScan {
         if (lp == null) return found;
         for (LinkAddress la : lp.getLinkAddresses()) {
             if (!(la.getAddress() instanceof Inet4Address)) continue;
-            byte[] ip = la.getAddress().getAddress();
-            String prefix = (ip[0] & 255) + "." + (ip[1] & 255) + "." + (ip[2] & 255) + ".";
-            ExecutorService pool = Executors.newFixedThreadPool(48);
-            for (int host = 1; host < 255; host++) {
-                if (host == (ip[3] & 255)) continue;
-                String addr = prefix + host;
-                for (int port : PORTS) {
+            int me = java.nio.ByteBuffer.wrap(la.getAddress().getAddress()).getInt();
+            // Home networks are a /24; offices and hostels can be bigger (cap at /19).
+            int bits = Math.max(19, Math.min(30, la.getPrefixLength()));
+            int mask = -1 << (32 - bits);
+            int first = (me & mask) + 1, last = (me | ~mask) - 1;
+            // On big networks try only llama.cpp's port, to finish in seconds.
+            int[] ports = bits < 24 ? new int[]{PORTS[0]} : PORTS;
+            ExecutorService pool = Executors.newFixedThreadPool(bits < 24 ? 128 : 48);
+            for (int ip = first; ip <= last; ip++) {
+                if (ip == me) continue;
+                String addr = ((ip >>> 24) & 255) + "." + ((ip >>> 16) & 255) + "."
+                        + ((ip >>> 8) & 255) + "." + (ip & 255);
+                for (int port : ports) {
                     pool.execute(() -> {
                         if (open(addr, port) && answers(addr, port)) {
                             found.add("http://" + addr + ":" + port + "/v1");
@@ -48,7 +54,7 @@ final class LanScan {
             }
             pool.shutdown();
             try {
-                pool.awaitTermination(30, TimeUnit.SECONDS);
+                pool.awaitTermination(60, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 pool.shutdownNow();
             }
