@@ -5,6 +5,7 @@
 #   - no dynamic/logical partitions, no /metadata on oem (wiping it would wipe oem)
 #   - androidboot.super_partition=system dropped from the kernel command line
 #   - decryption starts on ro.crypto.state=encrypted alone (it needed dynamic partitions)
+#   - a USB rule for adb sideload (USB never came back in sideload mode)
 # usage: fusionx-port/twrp/build-kgv-twrp.sh   -> kgv-twrp/kgv-twrp-3.7.0_12-mido.img
 # Base image: https://sourceforge.net/projects/alone0316/files/recovery/twrp-3.7.0_12.0-mido-A13.img
 set -euo pipefail
@@ -44,6 +45,25 @@ p='init.recovery.qcom_decrypt.rc'; s=open(p).read()
 old='on property:ro.crypto.state=encrypted && property:ro.boot.dynamic_partitions=true'
 assert old in s
 open(p,'w').write(s.replace(old,'# KGV FusionX: mido has no dynamic partitions, so start decryption on encryption alone.\non property:ro.crypto.state=encrypted'))
+p='init.recovery.usb.rc'; s=open(p).read()
+assert 'sys.usb.config=sideload' not in s
+s+='''
+# KGV FusionX: adb sideload. Only adb and mtp had rules here, and the generic sideload rules
+# need sys.usb.configfs=1 (this build has 0), so USB never came back after entering sideload.
+on property:sys.usb.ffs.ready=1 && property:sys.usb.config=sideload
+    write /config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "adb"
+    rm /config/usb_gadget/g1/configs/b.1/f1
+    rm /config/usb_gadget/g1/configs/b.1/f2
+    rm /config/usb_gadget/g1/configs/b.1/f3
+    rm /config/usb_gadget/g1/configs/b.1/f4
+    rm /config/usb_gadget/g1/configs/b.1/f5
+    write /config/usb_gadget/g1/idVendor 0x18d1
+    write /config/usb_gadget/g1/idProduct 0x4ee7
+    symlink /config/usb_gadget/g1/functions/ffs.adb /config/usb_gadget/g1/configs/b.1/f1
+    write /config/usb_gadget/g1/UDC ${sys.usb.controller}
+    setprop sys.usb.state ${sys.usb.config}
+'''
+open(p,'w').write(s)
 PY
 find . | LC_ALL=C sort | cpio -o -H newc -R 0:0 --quiet | gzip -9 > "$W/ramdisk.new.gz"
 cd "$W"
