@@ -1,7 +1,7 @@
 From 920e2d9d0c89445cf45b416c8f731f4ba11813fe Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 13:36:12 +0530
-Subject: [PATCH] Settings: KGV X Intelligence on the homepage
+Subject: [PATCH 1/2] Settings: KGV X Intelligence on the homepage
 
 Between Network & internet and Connected devices, opening
 org.kgv.intelligence/.SettingsActivity.

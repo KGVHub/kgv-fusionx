@@ -12,7 +12,7 @@
     <string name="not_configured">Choose an AI model first: Settings › KGV X Intelligence.</string>
 
     <string name="settings_provider">AI model</string>
-    <string name="provider_local">Local (on this phone or your network)</string>
+    <string name="provider_local">Your home PC (llama.cpp on Wi-Fi)</string>
     <string name="provider_openrouter">OpenRouter</string>
     <string name="provider_custom">Other OpenAI-compatible server</string>
     <string name="provider_local_help">Use the AI on your home PC: install llama.cpp, start it with

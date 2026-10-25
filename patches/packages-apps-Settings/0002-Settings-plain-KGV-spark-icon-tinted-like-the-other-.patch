@@ -1,0 +1,54 @@
+From e38acf1e3d50340aa39e128ebe5aceca99ec9d58 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 14:06:42 +0530
+Subject: [PATCH 2/2] Settings: plain KGV spark icon, tinted like the other
+ homepage icons
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I4ad3c967887858b2b99ab29e6a988786a46b1f82
+---
+ res/drawable/ic_homepage_kgv_intelligence.xml | 18 ------------------
+ res/xml/top_level_settings.xml                |  2 +-
+ 2 files changed, 1 insertion(+), 19 deletions(-)
+ delete mode 100644 res/drawable/ic_homepage_kgv_intelligence.xml
+
+diff --git a/res/drawable/ic_homepage_kgv_intelligence.xml b/res/drawable/ic_homepage_kgv_intelligence.xml
+deleted file mode 100644
+index 1303c54..0000000
+--- a/res/drawable/ic_homepage_kgv_intelligence.xml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!-- KGV FusionX: the KGV X Intelligence spark, in the homepage icon shape. -->
+-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+-
+-    <item>
+-        <com.android.settingslib.widget.AdaptiveIconShapeDrawable
+-            android:width="@dimen/dashboard_tile_image_size"
+-            android:height="@dimen/dashboard_tile_image_size"
+-            android:color="#FFFF2D3A" />
+-    </item>
+-
+-    <item
+-        android:width="@dimen/dashboard_tile_foreground_image_size"
+-        android:height="@dimen/dashboard_tile_foreground_image_size"
+-        android:start="@dimen/dashboard_tile_foreground_image_inset"
+-        android:top="@dimen/dashboard_tile_foreground_image_inset"
+-        android:drawable="@drawable/ic_kgv_spark" />
+-</layer-list>
+diff --git a/res/xml/top_level_settings.xml b/res/xml/top_level_settings.xml
+index 8789e08..ca519bb 100644
+--- a/res/xml/top_level_settings.xml
++++ b/res/xml/top_level_settings.xml
+@@ -32,7 +32,7 @@
+ 
+     <!-- KGV FusionX: KGV X Intelligence, between Network & internet and Connected devices. -->
+     <com.android.settings.widget.HomepagePreference
+-        android:icon="@drawable/ic_homepage_kgv_intelligence"
++        android:icon="@drawable/ic_kgv_spark"
+         android:key="top_level_kgv_intelligence"
+         android:order="-147"
+         android:title="@string/kgv_intelligence_title"
+-- 
+2.53.0
+
