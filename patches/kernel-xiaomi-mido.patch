@@ -1,0 +1,32 @@
+From e80387f573e1144f2120a26c13f20649e7114d62 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:02:47 +0530
+Subject: [PATCH] mido: brand the kernel KGV-Pro-X
+
+Release string 4.9.x-KGV-Pro-X, without the git hash suffix.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/configs/mido_defconfig | 1 +
+ localversion                      | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/mido_defconfig b/arch/arm64/configs/mido_defconfig
+index fed16fc13..88695cdf9 100644
+--- a/arch/arm64/configs/mido_defconfig
++++ b/arch/arm64/configs/mido_defconfig
+@@ -706,3 +706,4 @@ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_CRYPTO_AES_ARM64_NEON_BLK=y
+ CONFIG_CRYPTO_CRC32_ARM64=y
+ CONFIG_QMI_ENCDEC=y
++# CONFIG_LOCALVERSION_AUTO is not set
+diff --git a/localversion b/localversion
+index 73678162f..e83d21d2e 100644
+--- a/localversion
++++ b/localversion
+@@ -1 +1 @@
+-~zLOS
++-KGV-Pro-X
+-- 
+2.53.0
+

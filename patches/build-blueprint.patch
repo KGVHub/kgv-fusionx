@@ -1,3 +1,27 @@
+From 782c383767fa1a3ba64f479b7eaaa73dc889815d Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:02:46 +0530
+Subject: [PATCH] blueprint: low-memory mode for 8 GB build hosts
+
+BLUEPRINT_COMPACT_ACTIONS=1 renders each module's build actions to
+compressed ninja text as soon as they are generated, instead of holding
+the parsed form until the whole build file is written; that was most of
+soong_build's peak heap. BLUEPRINT_SKIP_MODULE_TYPES drops test and fuzz
+module types at parse time, and long ninja arguments are parsed once and
+cached. BLUEPRINT_VARIANT_STATS writes variant and heap diagnostics.
+
+Together these fit the LineageOS 20 Soong graph in 6.3 GB.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I71389260a421976be46beadc3e3c90980b1f9e45
+---
+ Android.bp         |   1 +
+ compact_actions.go | 218 +++++++++++++++++++++++++++++++++++++++++++++
+ context.go         |  55 +++++++++---
+ ninja_defs.go      |  32 ++++++-
+ 4 files changed, 291 insertions(+), 15 deletions(-)
+ create mode 100644 compact_actions.go
+
 diff --git a/Android.bp b/Android.bp
 index c84d04a..e1c1496 100644
 --- a/Android.bp
@@ -452,3 +476,6 @@ index 69233c2..f890c98 100644
 +	cached, _ := argCache.LoadOrStore(key, parsed)
 +	return cached.(ninjaString), nil
 +}
+-- 
+2.53.0
+

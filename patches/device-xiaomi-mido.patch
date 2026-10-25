@@ -1,0 +1,39 @@
+From b9228b06ac55b732eed585da7d830df3b407c194 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:02:46 +0530
+Subject: [PATCH] mido: KGV FusionX fixes
+
+- sepolicy: drop the duplicate health-service.qti label, already in
+  the common qcom legacy policy (checkfc failed on it)
+- kernel: build as kgvarunkanth@KGV-FusionX
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ BoardConfig.mk                | 1 +
+ sepolicy/vendor/file_contexts | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/BoardConfig.mk b/BoardConfig.mk
+index e7421f3..b7c3995 100644
+--- a/BoardConfig.mk
++++ b/BoardConfig.mk
+@@ -169,3 +169,4 @@ WPA_SUPPLICANT_VERSION := VER_0_8_X
+ 
+ # Inherit from the proprietary version
+ -include vendor/xiaomi/mido/BoardConfigVendor.mk
++TARGET_KERNEL_ADDITIONAL_FLAGS += KBUILD_BUILD_USER=kgvarunkanth KBUILD_BUILD_HOST=KGV-FusionX
+diff --git a/sepolicy/vendor/file_contexts b/sepolicy/vendor/file_contexts
+index cc67b6a..d31d6ea 100644
+--- a/sepolicy/vendor/file_contexts
++++ b/sepolicy/vendor/file_contexts
+@@ -29,7 +29,6 @@
+ 
+ # HALs
+ /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint@2\.1-service\.xiaomi_mido    u:object_r:hal_fingerprint_default_exec:s0
+-/(vendor|system/vendor)/bin/hw/android\.hardware\.health-service\.qti			               u:object_r:hal_health_default_exec:s0
+ /(vendor|system/vendor)/bin/hw/android\.hardware\.ir@1\.0-service\.xiaomi_mido                         u:object_r:hal_ir_default_exec:s0
+ /(vendor|system/vendor)/bin/hw/android\.hardware\.light-service\.xiaomi_mido                           u:object_r:hal_light_default_exec:s0
+ /(vendor|system/vendor)/bin/hw/vendor\.lineage\.livedisplay@2\.0-service\.xiaomi_mido                  u:object_r:hal_lineage_livedisplay_qti_exec:s0
+-- 
+2.53.0
+

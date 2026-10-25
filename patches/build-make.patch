@@ -1,3 +1,17 @@
+From 5203250631f8776577b13cbcbb98550b64063e7e Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:02:46 +0530
+Subject: [PATCH] envsetup: allow building without the 2nd host arch
+
+HOST_2ND_ARCH_OVERRIDE=none drops the 32-bit host variants, which an
+8 GB build host cannot afford and a device build does not need.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I8c3ed544ab0e0587b18b275c8bbe919e14fa6ab1
+---
+ core/envsetup.mk | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
 diff --git a/core/envsetup.mk b/core/envsetup.mk
 index d116aaf..aa99ad8 100644
 --- a/core/envsetup.mk
@@ -29,3 +43,6 @@ index d116aaf..aa99ad8 100644
  HOST_2ND_ARCH_VAR_PREFIX := 2ND_
  HOST_2ND_ARCH_MODULE_SUFFIX := _32
  HOST_CROSS_2ND_ARCH_VAR_PREFIX := 2ND_
+-- 
+2.53.0
+

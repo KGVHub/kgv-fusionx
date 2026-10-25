@@ -10,12 +10,15 @@
 #   6. Staged: soong/kati graph first (STAGE=graph), then the image.
 # usage: [JOBS=n] [STAGE=graph|full|<target>] fusionx-port/build.sh
 set -euo pipefail
-# Hard memory budget: run inside a cgroup capped at MEM_LIMIT with no swap,
+# Hard memory budget: run inside a cgroup capped at MEM_LIMIT (zram swap capped at SWAP_MAX),
 # so a breach kills only the build. MEM_LIMIT=none disables it.
-MEM_LIMIT=${MEM_LIMIT:-5G}
+# The build also gets the lowest CPU and disk priority so the desktop stays
+# usable while it runs.
+MEM_LIMIT=${MEM_LIMIT:-6000M}
 if [ "$MEM_LIMIT" != none ] && [ -z "${KGV_IN_SCOPE:-}" ]; then
-  exec systemd-run --user --scope --quiet -p MemoryMax="$MEM_LIMIT" -p MemorySwapMax="${SWAP_MAX:-infinity}" \
-       env KGV_IN_SCOPE=1 "$0" "$@"
+  exec systemd-run --user --scope --quiet -p MemoryMax="$MEM_LIMIT" -p MemoryHigh="${MEM_HIGH:-5700M}" -p MemorySwapMax="${SWAP_MAX:-2G}" \
+       -p CPUWeight=10 -p IOWeight=10 \
+       nice -n 19 ionice -c 2 -n 7 env KGV_IN_SCOPE=1 "$0" "$@"
 fi
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 SRC=$ROOT/fusionx
@@ -48,6 +51,9 @@ export HOST_2ND_ARCH_OVERRIDE=none
 # GOMEMLIMIT needs Go 1.19+; this tree ships Go 1.18, so only GOGC applies.
 export GOMEMLIMIT=${GOMEMLIMIT:-3GiB}
 export GOGC=${GOGC:-25}
+# Serial GC: much less memory beyond the heap than G1 for R8, D8, javac,
+# metalava and the other Java build tools.
+export JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS:--XX:+UseSerialGC}
 # Fewer parallel mutator goroutines keep less transient garbage alive.
 export GOMAXPROCS=${GOMAXPROCS:-4}
 # Render and compress each module's ninja actions as soon as they are
