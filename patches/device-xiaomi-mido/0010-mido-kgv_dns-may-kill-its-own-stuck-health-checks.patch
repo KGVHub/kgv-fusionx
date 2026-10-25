@@ -1,0 +1,26 @@
+From 16f8ed6b20a5810695740ae012c7bca10a84984a Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 20:44:41 +0530
+Subject: [PATCH] mido: kgv_dns may kill its own stuck health checks
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sepolicy/private/kgv_dns.te | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sepolicy/private/kgv_dns.te b/sepolicy/private/kgv_dns.te
+index 92413fa..fc56b19 100644
+--- a/sepolicy/private/kgv_dns.te
++++ b/sepolicy/private/kgv_dns.te
+@@ -11,7 +11,7 @@ allow kgv_dns toolbox_exec:file rx_file_perms;
+ allow kgv_dns system_file:file { rx_file_perms lock };
+ 
+ # iptables / ip6tables
+-allow kgv_dns self:capability { net_admin net_raw chown fowner };
++allow kgv_dns self:capability { net_admin net_raw chown fowner kill };
+ allow kgv_dns self:rawip_socket create_socket_perms_no_ioctl;
+ allow kgv_dns proc_net:file r_file_perms;
+ dontaudit kgv_dns kernel:system module_request;
+-- 
+2.53.0
+

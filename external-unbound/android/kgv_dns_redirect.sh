@@ -32,15 +32,18 @@ unrules() {
     done
 }
 
-# Unbound answers a real query (". NS") without an error, and a root server
-# answers over TCP port 53 (if the network allows that, it allows recursion
-# too). Forward mode only needs Unbound answering. Listening isn't enough:
-# a resolver that refuses or fails every query makes Android mark the Wi-Fi
-# as having no internet and stop joining it.
+# Unbound answers a real query (". NS"), and a root server answers over TCP
+# port 53 (if the network allows that, it allows recursion too). Forward mode
+# only needs Unbound answering. Listening isn't enough: a resolver that refuses
+# every query makes Android mark the Wi-Fi as having no internet and stop
+# joining it. SERVFAIL is fine: Unbound gives it while it can't reach the
+# internet yet (at boot, before Wi-Fi is up) and recovers by itself, and
+# falling back then would leave networks with broken DNS of their own (some
+# hostels and colleges) without any DNS, so they get dropped for "no internet".
 QUERY='\022\064\001\000\000\001\000\000\000\000\000\000\000\000\002\000\001'
 healthy() {
     flags=$( (printf "$QUERY"; sleep 3) | timeout 5 nc -u 127.0.0.1 5353 | od -An -tx1 -j3 -N1)
-    case "$flags" in *0) ;; *) return 1 ;; esac   # low nibble is the rcode
+    case "$flags" in ""|*5) return 1 ;; esac   # no answer, or REFUSED (rcode 5)
     [ "$mode" = recursive ] || return 0
     for root in 198.41.0.4 199.9.14.201 192.33.4.12 2001:503:ba3e::2:30; do
         timeout 5 nc -w 3 $root 53 </dev/null >/dev/null 2>&1 && return 0
@@ -103,7 +106,12 @@ case "$1" in
         state=
         while true; do
             if healthy; then
-                [ "$state" = active ] || { rules; state=active; setprop kgv.dns.state active; }
+                if [ "$state" != active ]; then
+                    # Coming back from fallback (the internet was unreachable, as at
+                    # boot): restart Unbound so it forgets the servers it gave up on.
+                    [ "$state" = fallback ] && { setprop kgv.dns.ready "$mode.$(date +%s)"; sleep 2; }
+                    rules; state=active; setprop kgv.dns.state active
+                fi
             else
                 [ "$state" = fallback ] || { unrules; state=fallback; setprop kgv.dns.state fallback; }
             fi

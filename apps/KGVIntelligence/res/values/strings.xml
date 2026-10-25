@@ -96,7 +96,7 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
     <string name="section_adblock">KGV AdBlock</string>
     <string name="adblock_summary">Blocks about 71,000 ad, tracker and malware domains for every app and browser, with nothing to install.</string>
     <string name="adblock_on">Block ads and trackers</string>
-    <string name="adblock_on_summary">Uses about 15 MB of memory while on</string>
+    <string name="adblock_on_summary">Uses about 30 MB of memory while on</string>
     <string name="adblock_how">AdBlock works inside the DNS resolver: blocked names simply don\'t resolve, so ads never load. Turning it on also turns DNS on. If a site breaks, switch AdBlock off. List: StevenBlack unified hosts (MIT licence).</string>
     <string name="adblock_off">Off</string>
     <string name="adblock_active">Blocking ads and trackers</string>
