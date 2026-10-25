@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  KGV FusionX 1.0 for the Redmi Note 4 / 4X Snapdragon (mido), on LineageOS 20.
+  A local manifest: sync and build steps are in README.md ("Sync and build").
+
+  Other devices: keep the low-RAM build and KGV feature projects, swap the mido
+  device, kernel and vendor projects for your device's, and set DEVICE when building.
+-->
+<manifest>
+  <remote name="kgv" fetch="https://github.com/KGVHub/" revision="refs/heads/kgv-1.0" />
+  <remote name="zeelog" fetch="https://github.com/zeelog/" />
+
+  <!-- Build scripts, patches and KGV TWRP (run kgv/build.sh from the top of the tree) -->
+  <project path="kgv" name="kgv-fusionx" remote="kgv" revision="refs/heads/main" />
+
+  <!-- Low-RAM build: soong_build fits in 6.3 GB, no 32-bit host variants -->
+  <remove-project name="LineageOS/android_build" />
+  <project path="build/make" name="android_build" remote="kgv" groups="pdk" >
+    <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />
+    <linkfile src="buildspec.mk.default" dest="build/buildspec.mk.default" />
+    <linkfile src="core" dest="build/core" />
+    <linkfile src="envsetup.sh" dest="build/envsetup.sh" />
+    <linkfile src="target" dest="build/target" />
+    <linkfile src="tools" dest="build/tools" />
+  </project>
+  <remove-project name="LineageOS/android_build_soong" />
+  <project path="build/soong" name="android_build_soong" remote="kgv" groups="pdk,tradefed" >
+    <linkfile src="root.bp" dest="Android.bp" />
+    <linkfile src="bootstrap.bash" dest="bootstrap.bash" />
+  </project>
+  <remove-project name="platform/build/blueprint" />
+  <project path="build/blueprint" name="android_build_blueprint" remote="kgv" groups="pdk,tradefed" />
+
+  <!-- KGV features and fixes -->
+  <remove-project name="LineageOS/android_frameworks_base" />
+  <project path="frameworks/base" name="android_frameworks_base" remote="kgv" groups="pdk-cw-fs,pdk-fs" />
+  <remove-project name="LineageOS/android_packages_apps_Settings" />
+  <project path="packages/apps/Settings" name="android_packages_apps_Settings" remote="kgv" groups="pdk-fs" />
+  <remove-project name="LineageOS/android_packages_modules_Permission" />
+  <project path="packages/modules/Permission" name="android_packages_modules_Permission" remote="kgv" groups="pdk-cw-fs,pdk-fs" />
+  <remove-project name="LineageOS/android_vendor_lineage" />
+  <project path="vendor/lineage" name="android_vendor_lineage" remote="kgv" />
+  <remove-project name="LineageOS/android_lineage-sdk" />
+  <project path="lineage-sdk" name="android_lineage-sdk" remote="kgv" />
+  <project path="packages/apps/KGVIntelligence" name="android_packages_apps_KGVIntelligence" remote="kgv" />
+  <project path="external/unbound" name="android_external_unbound" remote="kgv" />
+
+  <!-- Redmi Note 4 (mido) -->
+  <project path="device/xiaomi/mido" name="android_device_xiaomi_mido" remote="kgv" />
+  <project path="kernel/xiaomi/mido" name="android_kernel_xiaomi_mido" remote="kgv" />
+  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="zeelog" revision="lineage-20.0" />
+
+  <!-- Not needed for a device build; saves about 11 GB -->
+  <remove-project name="platform/prebuilts/remoteexecution-client" />
+  <remove-project name="platform/prebuilts/android-emulator" />
+</manifest>

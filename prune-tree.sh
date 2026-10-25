@@ -3,7 +3,11 @@
 # markers; no files are deleted). Smaller module graph -> less soong_build RAM.
 # usage: prune-tree.sh [--undo]
 set -euo pipefail
-SRC=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../fusionx" && pwd)
+# Same tree lookup as build.sh: $SRC, the current directory if it is a tree, or ../fusionx.
+if [ -z "${SRC:-}" ]; then
+  if [ -f "$PWD/build/envsetup.sh" ]; then SRC=$PWD
+  else SRC=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../fusionx" && pwd); fi
+fi
 DIRS="cts/apps cts/common cts/development cts/helpers cts/hostsidetests cts/suite cts/tests cts/tools
       platform_testing device/google hardware/google
       device/generic/goldfish device/generic/goldfish-opengl device/generic/car
