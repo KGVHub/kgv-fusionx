@@ -1,7 +1,7 @@
 From 5fcc33c9f32009a735eb8233a3c11758701fa998 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 07:26:55 +0530
-Subject: [PATCH] lineage: brand the build KGV FusionX
+Subject: [PATCH 1/2] lineage: brand the build KGV FusionX
 
 About phone shows "KGV FusionX 1.0 (<date>)" as the version and the zip
 is KGV-FusionX-<version>-<date>-<device>.zip. ro.lineage.version keeps
