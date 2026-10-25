@@ -36,7 +36,7 @@ unrules() {
 # allows that, it allows recursion too). Forward mode only needs Unbound up.
 healthy() {
     nc -w 3 127.0.0.1 5353 </dev/null >/dev/null 2>&1 || return 1
-    [ "$mode" = tls ] && return 0
+    [ "$mode" = recursive ] || return 0
     for root in 198.41.0.4 199.9.14.201 192.33.4.12 2001:503:ba3e::2:30; do
         nc -w 3 $root 53 </dev/null >/dev/null 2>&1 && return 0
     done
@@ -61,6 +61,15 @@ forward-zone:
     forward-addr: 149.112.112.112@853#dns.quad9.net
     forward-addr: 2620:fe::fe@853#dns.quad9.net
 CONF
+    elif [ "$1" = custom ]; then
+        # The user's own servers; Unbound still caches and validates DNSSEC.
+        {
+            echo 'forward-zone:'
+            echo '    name: "."'
+            for ip in $(getprop persist.kgv.dns.servers | tr ',' ' '); do
+                echo "    forward-addr: $ip"
+            done
+        } > $DIR/forward.conf
     else
         : > $DIR/forward.conf
     fi
@@ -72,6 +81,7 @@ case "$1" in
     start)
         mode=$(getprop persist.kgv.dns.mode)
         [ -z "$mode" ] && mode=recursive
+        [ "$mode" = custom ] && [ -z "$(getprop persist.kgv.dns.servers)" ] && mode=recursive
         if [ "$mode" = off ]; then
             unrules
             setprop kgv.dns.ready off

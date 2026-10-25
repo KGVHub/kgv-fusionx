@@ -1,7 +1,7 @@
 From 47bf5a2f1b26ce7905a92ab4f9daddcc0ae4b556 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 08:40:30 +0530
-Subject: [PATCH 3/4] mido: ship KGV X Intelligence as the default assistant
+Subject: [PATCH 3/6] mido: ship KGV X Intelligence as the default assistant
 
 Adds the app, makes it config_defaultAssistant and turns on window blur
 for its chat sheet; SystemUI keeps its own blurs off for speed.

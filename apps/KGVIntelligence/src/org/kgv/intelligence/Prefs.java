@@ -229,11 +229,36 @@ final class Prefs {
     // ---- private DNS: the on-device Unbound resolver (external/unbound) ----
 
     /** Resolver modes: label, then the persist.kgv.dns.mode value. */
+    static final String DNS_CUSTOM = "custom";
     static final String[][] DNS_MODES = {
-            {"KGV resolver: recursive (no DNS provider sees your lookups)", "recursive"},
-            {"KGV resolver: encrypted via Quad9 (for networks that block recursion)", "tls"},
-            {"Off (the network's DNS)", "off"},
+            {"Local resolver (recommended): recursive, no DNS provider sees your lookups",
+                    "recursive"},
+            {"Local resolver, encrypted via Quad9: for networks that block recursion", "tls"},
+            {"Custom DNS servers", DNS_CUSTOM},
+            {"Off: the network's DNS", "off"},
     };
+
+    /** The user's DNS servers for custom mode, comma separated. */
+    static String dnsServers() {
+        return android.os.SystemProperties.get("persist.kgv.dns.servers", "");
+    }
+
+    static void setDnsServers(String list) {
+        android.os.SystemProperties.set("persist.kgv.dns.servers", list);
+    }
+
+    /** "1.1.1.1 9.9.9.9" -> "1.1.1.1,9.9.9.9"; null if empty, too many or not IP addresses. */
+    static String normalizeDnsServers(String input) {
+        StringBuilder out = new StringBuilder();
+        int n = 0;
+        for (String s : input.split("[,;\\s]+")) {
+            if (s.isEmpty()) continue;
+            if (!android.net.InetAddresses.isNumericAddress(s) || ++n > 4) return null;
+            if (out.length() > 0) out.append(',');
+            out.append(s);
+        }
+        return n == 0 ? null : out.toString();
+    }
 
     static String dnsMode() {
         String m = android.os.SystemProperties.get("persist.kgv.dns.mode", "");

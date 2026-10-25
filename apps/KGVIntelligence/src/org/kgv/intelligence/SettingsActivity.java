@@ -44,7 +44,10 @@ public class SettingsActivity extends Activity {
     private Switch mAutomation;
     private Switch mDoubleTap;
     private TextView mMcpStatus;
-    private Button mDns;
+    private TextView mDns;
+    private TextView mMainDns;
+    private Switch mMainMcp;
+    private EditText mDnsServers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +58,161 @@ public class SettingsActivity extends Activity {
         int pad = dp(20);
         col.setPadding(pad, pad, pad, pad);
 
+        String section = getIntent().getStringExtra(EXTRA_SECTION);
+        if (SECTION_MCP.equals(section)) {
+            buildMcp(col);
+        } else if (SECTION_DNS.equals(section)) {
+            buildDns(col);
+        } else if (SECTION_AI.equals(section)) {
+            buildAi(col);
+        } else {
+            buildMain(col);
+        }
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFitsSystemWindows(true);
+        scroll.addView(col);
+        setContentView(scroll);
+    }
+
+    static final String EXTRA_SECTION = "section";
+    static final String SECTION_AI = "ai";
+    static final String SECTION_MCP = "mcp";
+    static final String SECTION_DNS = "dns";
+
+    /** The first page: KGV AI, MCP server (with its switch) and DNS Server. */
+    private void buildMain(LinearLayout col) {
         col.addView(header(getString(R.string.app_name), 24));
         col.addView(label(getString(R.string.settings_summary)));
+        col.addView(entry(R.string.section_ai, getString(R.string.section_ai_summary), SECTION_AI));
+        mMainMcp = toggle(R.string.section_mcp, R.string.section_mcp_summary, mPrefs.mcpEnabled(),
+                (b, on) -> {
+                    mPrefs.setBool("mcp", on);
+                    McpService.sync(this);
+                });
+        mMainMcp.setPadding(0, dp(14), 0, dp(4));
+        col.addView(mMainMcp);
+        col.addView(button(R.string.section_mcp_details, v -> open(SECTION_MCP)));
+        mMainDns = entry(R.string.section_dns, "", SECTION_DNS);
+        col.addView(mMainDns);
+    }
+
+    private TextView entry(int title, String summary, String section) {
+        TextView tv = new TextView(this);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
+        tv.setPadding(0, dp(16), 0, dp(16));
+        tv.setTag(title);
+        setEntry(tv, summary);
+        tv.setBackgroundResource(android.R.drawable.list_selector_background);
+        tv.setOnClickListener(v -> open(section));
+        return tv;
+    }
+
+    private void setEntry(TextView tv, String summary) {
+        android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder(
+                getString((Integer) tv.getTag()));
+        if (!summary.isEmpty()) {
+            int start = b.length();
+            b.append('\n').append(summary);
+            b.setSpan(new android.text.style.RelativeSizeSpan(0.8f), start, b.length(), 0);
+            b.setSpan(new android.text.style.ForegroundColorSpan(0xFF9E9E9E), start, b.length(), 0);
+        }
+        tv.setText(b);
+    }
+
+    private void open(String section) {
+        startActivity(new Intent(this, SettingsActivity.class).putExtra(EXTRA_SECTION, section));
+    }
+
+    /** DNS Server: the on-device Unbound resolver, or the user's own DNS servers. */
+    private void buildDns(LinearLayout col) {
+        col.addView(header(getString(R.string.section_dns), 24));
+        col.addView(label(getString(R.string.settings_dns_summary)));
+        RadioGroup modes = new RadioGroup(this);
+        String current = Prefs.dnsMode();
+        for (String[] m : Prefs.DNS_MODES) {
+            RadioButton rb = new RadioButton(this);
+            rb.setId(View.generateViewId());
+            rb.setTag(m[1]);
+            rb.setText(m[0]);
+            rb.setPadding(0, dp(6), 0, dp(6));
+            modes.addView(rb);
+            if (m[1].equals(current)) rb.setChecked(true);
+        }
+        col.addView(modes);
+        col.addView(header(getString(R.string.settings_dns_custom_title), 13));
+        mDnsServers = field(InputType.TYPE_CLASS_TEXT);
+        mDnsServers.setHint("1.1.1.1, 9.9.9.9, 2606:4700:4700::1111");
+        mDnsServers.setText(Prefs.dnsServers());
+        col.addView(mDnsServers);
+        col.addView(label(getString(R.string.settings_dns_custom_help)));
+        modes.setOnCheckedChangeListener((g, id) -> {
+            String mode = (String) g.findViewById(id).getTag();
+            if (Prefs.DNS_CUSTOM.equals(mode) && !applyServers()) return;
+            Prefs.setDnsMode(this, mode);
+            mDns.postDelayed(this::showDns, 4000);
+        });
+        col.addView(button(R.string.settings_dns_apply, v -> {
+            if (applyServers()) {
+                RadioButton custom = modes.findViewWithTag(Prefs.DNS_CUSTOM);
+                if (custom.isChecked()) Prefs.setDnsMode(this, Prefs.DNS_CUSTOM);
+                else custom.setChecked(true);
+                toast(getString(R.string.settings_saved));
+            }
+        }));
+        mDns = label("");
+        mDns.setPadding(0, dp(12), 0, 0);
+        col.addView(mDns);
+    }
+
+    /** Validates and saves the custom DNS server list; false (with a message) if invalid. */
+    private boolean applyServers() {
+        String list = Prefs.normalizeDnsServers(mDnsServers.getText().toString());
+        if (list == null) {
+            toast(getString(R.string.settings_dns_invalid));
+            return false;
+        }
+        mDnsServers.setText(list);
+        Prefs.setDnsServers(list);
+        return true;
+    }
+
+    /** MCP server: on/off, network access, port and the client config. */
+    private void buildMcp(LinearLayout col) {
+        col.addView(header(getString(R.string.section_mcp), 24));
+        col.addView(label(getString(R.string.settings_mcp_summary)));
+        col.addView(toggle(R.string.settings_mcp_on, 0, mPrefs.mcpEnabled(), (b, on) -> {
+            mPrefs.setBool("mcp", on);
+            syncMcp();
+        }));
+        col.addView(toggle(R.string.settings_mcp_lan, R.string.settings_mcp_lan_summary,
+                mPrefs.mcpLan(), (b, on) -> {
+                    mPrefs.setBool("mcp_lan", on);
+                    syncMcp();
+                }));
+        mPort = field(InputType.TYPE_CLASS_NUMBER);
+        mPort.setText(String.valueOf(mPrefs.mcpPort()));
+        col.addView(mPort);
+        mMcpStatus = label("");
+        col.addView(mMcpStatus);
+        LinearLayout mcpRow = new LinearLayout(this);
+        mcpRow.addView(button(R.string.settings_mcp_apply, v -> {
+            try {
+                int port = Integer.parseInt(mPort.getText().toString().trim());
+                if (port < 1024 || port > 65535) throw new NumberFormatException();
+                mPrefs.setMcpPort(port);
+                syncMcp();
+            } catch (NumberFormatException e) {
+                toast("Port must be 1024–65535");
+            }
+        }));
+        mcpRow.addView(button(R.string.settings_mcp_copy, v -> copyMcpConfig()));
+        col.addView(mcpRow);
+    }
+
+    /** KGV AI: the model, voice, phone control and the chat. */
+    private void buildAi(LinearLayout col) {
+        col.addView(header(getString(R.string.section_ai), 24));
 
         // ---- the AI model ----
         col.addView(header(getString(R.string.settings_provider), 15));
@@ -151,87 +307,37 @@ public class SettingsActivity extends Activity {
         col.addView(button(R.string.settings_assistant, v -> startActivity(
                 new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))));
 
-        // ---- privacy ----
-        col.addView(header(getString(R.string.settings_privacy), 15));
-        col.addView(label(getString(R.string.settings_dns_summary)));
-        mDns = button(R.string.settings_dns, v -> pickDns());
-        col.addView(mDns);
-
-        // ---- MCP server ----
-        col.addView(header(getString(R.string.settings_mcp), 15));
-        col.addView(label(getString(R.string.settings_mcp_summary)));
-        col.addView(toggle(R.string.settings_mcp_on, 0, mPrefs.mcpEnabled(), (b, on) -> {
-            mPrefs.setBool("mcp", on);
-            syncMcp();
-        }));
-        col.addView(toggle(R.string.settings_mcp_lan, R.string.settings_mcp_lan_summary,
-                mPrefs.mcpLan(), (b, on) -> {
-                    mPrefs.setBool("mcp_lan", on);
-                    syncMcp();
-                }));
-        mPort = field(InputType.TYPE_CLASS_NUMBER);
-        mPort.setText(String.valueOf(mPrefs.mcpPort()));
-        col.addView(mPort);
-        mMcpStatus = label("");
-        col.addView(mMcpStatus);
-        LinearLayout mcpRow = new LinearLayout(this);
-        mcpRow.addView(button(R.string.settings_mcp_apply, v -> {
-            try {
-                int port = Integer.parseInt(mPort.getText().toString().trim());
-                if (port < 1024 || port > 65535) throw new NumberFormatException();
-                mPrefs.setMcpPort(port);
-                syncMcp();
-            } catch (NumberFormatException e) {
-                toast("Port must be 1024–65535");
-            }
-        }));
-        mcpRow.addView(button(R.string.settings_mcp_copy, v -> copyMcpConfig()));
-        col.addView(mcpRow);
-
         col.addView(header(getString(R.string.settings_chat), 15));
         col.addView(button(R.string.settings_clear, v -> {
             Agent.clearHistory();
             Conversation.get().clear();
             toast(getString(R.string.settings_cleared));
         }));
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFitsSystemWindows(true);
-        scroll.addView(col);
-        setContentView(scroll);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mAutomation.setChecked(Prefs.isAutomationEnabled(this));
-        mDoubleTap.setChecked(Prefs.isDoubleTapToWake(this));
-        mMcpStatus.postDelayed(this::showMcpStatus, 300);
+        if (mAutomation != null) mAutomation.setChecked(Prefs.isAutomationEnabled(this));
+        if (mDoubleTap != null) mDoubleTap.setChecked(Prefs.isDoubleTapToWake(this));
+        if (mMcpStatus != null) mMcpStatus.postDelayed(this::showMcpStatus, 300);
+        if (mMainMcp != null) mMainMcp.setChecked(mPrefs.mcpEnabled());
         showDns();
     }
 
+    /** The resolver's mode and state, on the DNS page and the first page. */
     private void showDns() {
         String mode = Prefs.dnsMode();
         String label = mode;
         for (String[] m : Prefs.DNS_MODES) if (m[1].equals(mode)) label = m[0];
+        if (Prefs.DNS_CUSTOM.equals(mode)) label += ": " + Prefs.dnsServers();
         String state = Prefs.dnsState();
-        if ("fallback".equals(state)) {
-            label += "\n" + getString(R.string.settings_dns_fallback);
+        String status = "fallback".equals(state) ? getString(R.string.settings_dns_fallback)
+                : "active".equals(state) ? getString(R.string.settings_dns_active) : "";
+        if (mMainDns != null) setEntry(mMainDns, label);
+        if (mDns != null) {
+            mDns.setText(status.isEmpty() ? label : label + "\n" + status);
         }
-        mDns.setText(label);
-    }
-
-    private void pickDns() {
-        String[] items = new String[Prefs.DNS_MODES.length];
-        for (int i = 0; i < items.length; i++) items[i] = Prefs.DNS_MODES[i][0];
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.settings_dns)
-                .setItems(items, (d, which) -> {
-                    Prefs.setDnsMode(this, Prefs.DNS_MODES[which][1]);
-                    mDns.postDelayed(this::showDns, 3000);
-                    showDns();
-                })
-                .show();
     }
 
     private void showProvider(String p) {
@@ -256,6 +362,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void saveFields() {
+        if (mSttEndpoint == null) return;   // not the KGV AI page
         if (mShown != null) {
             mPrefs.saveProvider(mShown, mEndpoint.getText().toString(),
                     mKey.getText().toString(), mModel.getText().toString());
@@ -339,6 +446,7 @@ public class SettingsActivity extends Activity {
 
     private void syncMcp() {
         McpService.sync(this);
+        if (mMcpStatus == null) return;
         mMcpStatus.postDelayed(this::showMcpStatus, 600);
     }
 
