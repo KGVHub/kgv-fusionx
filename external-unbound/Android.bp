@@ -5,7 +5,7 @@ cc_binary {
     name: "unbound",
     system_ext_specific: true,
     init_rc: ["unbound.rc"],
-    required: ["unbound.conf", "unbound_root.key", "kgv_dns_redirect"],
+    required: ["unbound.conf", "unbound_root.key", "unbound_adblock.conf", "kgv_dns_redirect"],
     cflags: [
         "-DHAVE_CONFIG_H",
         "-Wno-unused-parameter",
@@ -127,6 +127,16 @@ prebuilt_etc {
     sub_dir: "unbound",
     filename: "root.key",
     src: "android/root.key",
+}
+
+// KGV AdBlock: ad and tracker domains (StevenBlack unified hosts, MIT), loaded
+// by Unbound while persist.kgv.dns.adblock=1.
+prebuilt_etc {
+    name: "unbound_adblock.conf",
+    system_ext_specific: true,
+    sub_dir: "unbound",
+    filename: "adblock.conf",
+    src: "android/adblock.conf",
 }
 
 sh_binary {

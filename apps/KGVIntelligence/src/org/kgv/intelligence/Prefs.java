@@ -84,6 +84,30 @@ final class Prefs {
         return model(provider());
     }
 
+    /** The KGV X AI switch: off stops the assistant (MCP and the phone skills stay as set). */
+    boolean aiEnabled() {
+        return mPrefs.getBoolean("ai", true);
+    }
+
+    /**
+     * What the user typed as the server, made into a base URL: "192.168.1.5:8080" becomes
+     * "http://192.168.1.5:8080/v1", "api.example.com" becomes "https://api.example.com/v1".
+     */
+    static String normalizeEndpoint(String input) {
+        String e = input.trim();
+        if (e.isEmpty()) return e;
+        if (!e.contains("://")) {
+            String host = Uri.parse("http://" + e).getHost();
+            boolean plain = host != null && (isLocalAddress("http://" + e)
+                    || host.matches("[\\d.]+") || host.contains(":"));
+            e = (plain ? "http://" : "https://") + e;
+        }
+        while (e.endsWith("/")) e = e.substring(0, e.length() - 1);
+        String path = Uri.parse(e).getPath();
+        if (path == null || path.isEmpty()) e += "/v1";
+        return e;
+    }
+
     boolean isConfigured() {
         return !TextUtils.isEmpty(endpoint()) && !TextUtils.isEmpty(model());
     }
@@ -99,7 +123,7 @@ final class Prefs {
 
     void saveProvider(String p, String endpoint, String apiKey, String model) {
         mPrefs.edit()
-                .putString(p + "_endpoint", endpoint.trim())
+                .putString(p + "_endpoint", normalizeEndpoint(endpoint))
                 .putString(p + "_key", apiKey.trim())
                 .putString(p + "_model", model.trim())
                 .apply();
@@ -229,14 +253,41 @@ final class Prefs {
     // ---- private DNS: the on-device Unbound resolver (external/unbound) ----
 
     /** Resolver modes: label, then the persist.kgv.dns.mode value. */
+    static final String DNS_UNBOUND = "recursive";
     static final String DNS_CUSTOM = "custom";
+    static final String DNS_OFF = "off";
     static final String[][] DNS_MODES = {
-            {"Local resolver (recommended): recursive, no DNS provider sees your lookups",
-                    "recursive"},
-            {"Local resolver, encrypted via Quad9: for networks that block recursion", "tls"},
-            {"Custom DNS servers", DNS_CUSTOM},
-            {"Off: the network's DNS", "off"},
+            {"Unbound: the phone resolves everything itself, from the root servers; "
+                    + "no DNS company sees your lookups", DNS_UNBOUND},
+            {"Custom DNS: your own servers, still cached and DNSSEC-checked by Unbound",
+                    DNS_CUSTOM},
     };
+
+    static boolean dnsOn() {
+        return !DNS_OFF.equals(dnsMode());
+    }
+
+    /** Off stops Unbound; on brings back the mode used before. */
+    void setDnsOn(Context context, boolean on) {
+        if (on == dnsOn()) return;
+        if (on) {
+            setDnsMode(context, mPrefs.getString("dns_last_mode", DNS_UNBOUND));
+        } else {
+            mPrefs.edit().putString("dns_last_mode", dnsMode()).apply();
+            setDnsMode(context, DNS_OFF);
+        }
+    }
+
+    /** KGV AdBlock: Unbound answers NXDOMAIN for ad and tracker domains. */
+    static boolean adblock() {
+        return android.os.SystemProperties.getBoolean("persist.kgv.dns.adblock", false);
+    }
+
+    /** AdBlock works inside Unbound, so turning it on turns DNS on too. */
+    void setAdblock(Context context, boolean on) {
+        android.os.SystemProperties.set("persist.kgv.dns.adblock", on ? "1" : "0");
+        if (on) setDnsOn(context, true);
+    }
 
     /** The user's DNS servers for custom mode, comma separated. */
     static String dnsServers() {

@@ -7,9 +7,14 @@ import android.content.ClipboardManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -27,8 +32,9 @@ import org.json.JSONObject;
 import java.util.List;
 
 /**
- * Settings › KGV X Intelligence: the AI provider (local, OpenRouter or any
- * OpenAI-compatible server), voice, automations, the MCP server and double tap to wake.
+ * Settings › KGV X Intelligence: four switchable features, each with its own page:
+ * KGV X AI (the model, voice, phone control), DNS (Unbound or custom servers),
+ * KGV AdBlock and the MCP server.
  */
 public class SettingsActivity extends Activity {
     private Prefs mPrefs;
@@ -37,7 +43,9 @@ public class SettingsActivity extends Activity {
     private TextView mProviderHelp;
     private EditText mEndpoint;
     private EditText mKey;
-    private EditText mModel;
+    private AutoCompleteTextView mModel;
+    private TextView mModelStatus;
+    private final Runnable mFetchModels = () -> fetchModels(false);
     private EditText mSttEndpoint;
     private EditText mSttModel;
     private EditText mPort;
@@ -46,7 +54,12 @@ public class SettingsActivity extends Activity {
     private TextView mMcpStatus;
     private TextView mDns;
     private TextView mMainDns;
+    private TextView mMainAdblock;
     private Switch mMainMcp;
+    private Switch mMainDnsSwitch;
+    private Switch mMainAdblockSwitch;
+    private Switch mDnsSwitch;
+    private Switch mAdblockSwitch;
     private EditText mDnsServers;
 
     @Override
@@ -63,6 +76,8 @@ public class SettingsActivity extends Activity {
             buildMcp(col);
         } else if (SECTION_DNS.equals(section)) {
             buildDns(col);
+        } else if (SECTION_ADBLOCK.equals(section)) {
+            buildAdblock(col);
         } else if (SECTION_AI.equals(section)) {
             buildAi(col);
         } else {
@@ -79,22 +94,65 @@ public class SettingsActivity extends Activity {
     static final String SECTION_AI = "ai";
     static final String SECTION_MCP = "mcp";
     static final String SECTION_DNS = "dns";
+    static final String SECTION_ADBLOCK = "adblock";
 
-    /** The first page: KGV AI, MCP server (with its switch) and DNS Server. */
+    /** The first page: the four features, each with a switch; tap one for its page. */
     private void buildMain(LinearLayout col) {
         col.addView(header(getString(R.string.app_name), 24));
         col.addView(label(getString(R.string.settings_summary)));
-        col.addView(entry(R.string.section_ai, getString(R.string.section_ai_summary), SECTION_AI));
-        mMainMcp = toggle(R.string.section_mcp, R.string.section_mcp_summary, mPrefs.mcpEnabled(),
-                (b, on) -> {
-                    mPrefs.setBool("mcp", on);
-                    McpService.sync(this);
-                });
-        mMainMcp.setPadding(0, dp(14), 0, dp(4));
-        col.addView(mMainMcp);
-        col.addView(button(R.string.section_mcp_details, v -> open(SECTION_MCP)));
+        col.addView(feature(entry(R.string.section_ai, getString(R.string.section_ai_summary),
+                SECTION_AI), switchFor(mPrefs.aiEnabled(), (b, on) -> mPrefs.setBool("ai", on))));
         mMainDns = entry(R.string.section_dns, "", SECTION_DNS);
-        col.addView(mMainDns);
+        mMainDnsSwitch = switchFor(Prefs.dnsOn(), (b, on) -> setDns(on));
+        col.addView(feature(mMainDns, mMainDnsSwitch));
+        mMainAdblock = entry(R.string.section_adblock, "", SECTION_ADBLOCK);
+        mMainAdblockSwitch = switchFor(Prefs.adblock(), (b, on) -> setAdblock(on));
+        col.addView(feature(mMainAdblock, mMainAdblockSwitch));
+        mMainMcp = switchFor(mPrefs.mcpEnabled(), (b, on) -> {
+            mPrefs.setBool("mcp", on);
+            McpService.sync(this);
+        });
+        col.addView(feature(entry(R.string.section_mcp, getString(R.string.section_mcp_summary),
+                SECTION_MCP), mMainMcp));
+    }
+
+    /** A feature row: its title and summary (tap for its page) with its switch at the end. */
+    private LinearLayout feature(TextView entry, Switch toggle) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(entry, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        toggle.setPadding(dp(12), 0, 0, 0);
+        row.addView(toggle);
+        return row;
+    }
+
+    private Switch switchFor(boolean on, CompoundButton.OnCheckedChangeListener listener) {
+        Switch s = new Switch(this);
+        s.setChecked(on);
+        s.setOnCheckedChangeListener(listener);
+        return s;
+    }
+
+    /** DNS on or off, kept in step on every page; off also means AdBlock can't work. */
+    private void setDns(boolean on) {
+        if (on == Prefs.dnsOn()) return;
+        mPrefs.setDnsOn(this, on);
+        if (!on && Prefs.adblock()) toast(getString(R.string.adblock_needs_dns));
+        refreshSoon();
+    }
+
+    private void setAdblock(boolean on) {
+        if (on == Prefs.adblock()) return;
+        mPrefs.setAdblock(this, on);
+        refreshSoon();
+    }
+
+    /** Shows the switches now and the resolver's state once it has restarted. */
+    private void refreshSoon() {
+        showDns();
+        getWindow().getDecorView().postDelayed(this::showDns, 4000);
+        getWindow().getDecorView().postDelayed(this::showDns, 12000);
     }
 
     private TextView entry(int title, String summary, String section) {
@@ -124,10 +182,13 @@ public class SettingsActivity extends Activity {
         startActivity(new Intent(this, SettingsActivity.class).putExtra(EXTRA_SECTION, section));
     }
 
-    /** DNS Server: the on-device Unbound resolver, or the user's own DNS servers. */
+    /** DNS: on/off, then the on-device Unbound resolver or the user's own DNS servers. */
     private void buildDns(LinearLayout col) {
         col.addView(header(getString(R.string.section_dns), 24));
         col.addView(label(getString(R.string.settings_dns_summary)));
+        mDnsSwitch = toggle(R.string.settings_dns_on, R.string.settings_dns_on_summary,
+                Prefs.dnsOn(), (b, on) -> setDns(on));
+        col.addView(mDnsSwitch);
         RadioGroup modes = new RadioGroup(this);
         String current = Prefs.dnsMode();
         for (String[] m : Prefs.DNS_MODES) {
@@ -138,6 +199,9 @@ public class SettingsActivity extends Activity {
             rb.setPadding(0, dp(6), 0, dp(6));
             modes.addView(rb);
             if (m[1].equals(current)) rb.setChecked(true);
+        }
+        if (modes.getCheckedRadioButtonId() == View.NO_ID) {
+            ((RadioButton) modes.findViewWithTag(Prefs.DNS_UNBOUND)).setChecked(true);
         }
         col.addView(modes);
         col.addView(header(getString(R.string.settings_dns_custom_title), 13));
@@ -150,19 +214,32 @@ public class SettingsActivity extends Activity {
             String mode = (String) g.findViewById(id).getTag();
             if (Prefs.DNS_CUSTOM.equals(mode) && !applyServers()) return;
             Prefs.setDnsMode(this, mode);
-            mDns.postDelayed(this::showDns, 4000);
+            refreshSoon();
         });
         col.addView(button(R.string.settings_dns_apply, v -> {
             if (applyServers()) {
                 RadioButton custom = modes.findViewWithTag(Prefs.DNS_CUSTOM);
                 if (custom.isChecked()) Prefs.setDnsMode(this, Prefs.DNS_CUSTOM);
                 else custom.setChecked(true);
+                refreshSoon();
                 toast(getString(R.string.settings_saved));
             }
         }));
         mDns = label("");
         mDns.setPadding(0, dp(12), 0, 0);
         col.addView(mDns);
+    }
+
+    /** KGV AdBlock: ad and tracker domains blocked by the resolver for every app. */
+    private void buildAdblock(LinearLayout col) {
+        col.addView(header(getString(R.string.section_adblock), 24));
+        col.addView(label(getString(R.string.adblock_summary)));
+        mAdblockSwitch = toggle(R.string.adblock_on, R.string.adblock_on_summary,
+                Prefs.adblock(), (b, on) -> setAdblock(on));
+        col.addView(mAdblockSwitch);
+        TextView how = label(getString(R.string.adblock_how));
+        how.setPadding(0, dp(12), 0, 0);
+        col.addView(how);
     }
 
     /** Validates and saves the custom DNS server list; false (with a message) if invalid. */
@@ -213,6 +290,8 @@ public class SettingsActivity extends Activity {
     /** KGV AI: the model, voice, phone control and the chat. */
     private void buildAi(LinearLayout col) {
         col.addView(header(getString(R.string.section_ai), 24));
+        col.addView(toggle(R.string.ai_on, R.string.ai_on_summary, mPrefs.aiEnabled(),
+                (b, on) -> mPrefs.setBool("ai", on)));
 
         // ---- the AI model ----
         col.addView(header(getString(R.string.settings_provider), 15));
@@ -238,9 +317,32 @@ public class SettingsActivity extends Activity {
         mKey = field(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         col.addView(mKey);
         col.addView(header(getString(R.string.settings_model), 13));
-        mModel = field(InputType.TYPE_CLASS_TEXT);
+        mModel = new AutoCompleteTextView(this);
+        mModel.setSingleLine(true);
+        mModel.setInputType(InputType.TYPE_CLASS_TEXT);
+        mModel.setThreshold(1);
+        mModel.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+        mModel.setOnClickListener(v -> {
+            if (mModel.getAdapter() != null) mModel.showDropDown();
+        });
         col.addView(mModel);
+        mModelStatus = label("");
+        col.addView(mModelStatus);
         showProvider(mPrefs.chosenProvider());
+        // Typing the server's address (or a key) loads its models to pick from.
+        TextWatcher refetch = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence c, int a, int b, int d) {
+            }
+            @Override public void onTextChanged(CharSequence c, int a, int b, int d) {
+            }
+            @Override public void afterTextChanged(Editable e) {
+                mModel.removeCallbacks(mFetchModels);
+                mModel.postDelayed(mFetchModels, 1200);
+            }
+        };
+        mEndpoint.addTextChangedListener(refetch);
+        mKey.addTextChangedListener(refetch);
+        fetchModels(false);
         mProviders.setOnCheckedChangeListener((g, id) -> {
             saveFields();
             String p = (String) g.findViewById(id).getTag();
@@ -253,7 +355,7 @@ public class SettingsActivity extends Activity {
             saveFields();
             toast(getString(R.string.settings_saved));
         }));
-        row.addView(button(R.string.settings_models, v -> pickModel()));
+        row.addView(button(R.string.settings_models, v -> fetchModels(true)));
         row.addView(button(R.string.settings_test, v -> test()));
         col.addView(row);
         col.addView(button(R.string.settings_find_pc, v -> findPc()));
@@ -323,28 +425,49 @@ public class SettingsActivity extends Activity {
         if (mMcpStatus != null) mMcpStatus.postDelayed(this::showMcpStatus, 300);
         if (mMainMcp != null) mMainMcp.setChecked(mPrefs.mcpEnabled());
         showDns();
+        if (mMainAdblock != null) mMainAdblock.postDelayed(this::showDns, 1500);
     }
 
-    /** The resolver's mode and state, on the DNS page and the first page. */
+    /** DNS and AdBlock switches, mode and state, on every page that shows them. */
     private void showDns() {
+        boolean on = Prefs.dnsOn();
         String mode = Prefs.dnsMode();
-        String label = mode;
-        for (String[] m : Prefs.DNS_MODES) if (m[1].equals(mode)) label = m[0];
-        if (Prefs.DNS_CUSTOM.equals(mode)) label += ": " + Prefs.dnsServers();
-        String state = Prefs.dnsState();
-        String status = "fallback".equals(state) ? getString(R.string.settings_dns_fallback)
-                : "active".equals(state) ? getString(R.string.settings_dns_active) : "";
-        if (mMainDns != null) setEntry(mMainDns, label);
-        if (mDns != null) {
-            mDns.setText(status.isEmpty() ? label : label + "\n" + status);
+        String label = getString(R.string.settings_dns_off);
+        if (on) {
+            label = Prefs.DNS_CUSTOM.equals(mode)
+                    ? getString(R.string.dns_custom_short, Prefs.dnsServers())
+                    : getString(R.string.dns_unbound_short);
         }
+        String state = Prefs.dnsState();
+        String status = !on ? "" : "fallback".equals(state)
+                ? getString(R.string.settings_dns_fallback)
+                : "active".equals(state) ? getString(R.string.settings_dns_active)
+                : getString(R.string.settings_dns_starting);
+        if (mMainDns != null) setEntry(mMainDns, status.isEmpty() ? label : label + " · " + status);
+        if (mDns != null) mDns.setText(status.isEmpty() ? label : label + "\n" + status);
+        boolean ad = Prefs.adblock();
+        String adLabel = !ad ? getString(R.string.adblock_off)
+                : on ? getString(R.string.adblock_active) : getString(R.string.adblock_needs_dns);
+        if (mMainAdblock != null) setEntry(mMainAdblock, adLabel);
+        setQuietly(mMainDnsSwitch, on, (b, v) -> setDns(v));
+        setQuietly(mDnsSwitch, on, (b, v) -> setDns(v));
+        setQuietly(mMainAdblockSwitch, ad, (b, v) -> setAdblock(v));
+        setQuietly(mAdblockSwitch, ad, (b, v) -> setAdblock(v));
+    }
+
+    private static void setQuietly(Switch s, boolean on, CompoundButton.OnCheckedChangeListener l) {
+        if (s == null) return;
+        s.setOnCheckedChangeListener(null);
+        s.setChecked(on);
+        s.setOnCheckedChangeListener(l);
     }
 
     private void showProvider(String p) {
         mShown = p;
         mEndpoint.setText(mPrefs.endpoint(p));
         mKey.setText(mPrefs.apiKey(p));
-        mModel.setText(mPrefs.model(p));
+        mModel.setText(mPrefs.model(p), false);
+        mModel.setAdapter(null);
         switch (p) {
             case Prefs.LOCAL:
                 mProviderHelp.setText(R.string.provider_local_help);
@@ -353,7 +476,7 @@ public class SettingsActivity extends Activity {
                 break;
             case Prefs.OPENROUTER:
                 mProviderHelp.setText(R.string.provider_openrouter_help);
-                mModel.setHint("tap Models to choose");
+                mModel.setHint("choose from the list");
                 break;
             default:
                 mProviderHelp.setText(R.string.provider_custom_help);
@@ -371,33 +494,63 @@ public class SettingsActivity extends Activity {
     }
 
     private LlmClient shownClient() {
-        return new LlmClient(mEndpoint.getText().toString(), mKey.getText().toString().trim(),
-                mModel.getText().toString().trim());
+        return new LlmClient(Prefs.normalizeEndpoint(mEndpoint.getText().toString()),
+                mKey.getText().toString().trim(), mModel.getText().toString().trim());
     }
 
-    private void pickModel() {
-        saveFields();
-        toast("Loading models…");
+    /**
+     * Loads the server's models into the Model field's list. A single model is filled in;
+     * otherwise the list opens. pick: also show a dialog (the Models button).
+     */
+    private void fetchModels(boolean pick) {
+        String endpoint = mEndpoint.getText().toString().trim();
+        if (endpoint.isEmpty()) {
+            mModelStatus.setText("");
+            return;
+        }
+        String base = Prefs.normalizeEndpoint(endpoint);
+        mModelStatus.setText(getString(R.string.models_loading, base));
         LlmClient client = shownClient();
         new Thread(() -> {
             try {
                 List<String> ids = client.models();
                 runOnUiThread(() -> {
+                    if (!base.equals(Prefs.normalizeEndpoint(mEndpoint.getText().toString()))) {
+                        return;   // the address changed meanwhile
+                    }
                     if (ids.isEmpty()) {
-                        toast("The server lists no models.");
+                        mModelStatus.setText(R.string.models_none);
                         return;
                     }
-                    String[] items = ids.toArray(new String[0]);
-                    new AlertDialog.Builder(this)
-                            .setTitle(R.string.settings_models)
-                            .setItems(items, (d, which) -> {
-                                mModel.setText(items[which]);
-                                saveFields();
-                            })
-                            .show();
+                    mModelStatus.setText(getResources().getQuantityString(
+                            R.plurals.models_found, ids.size(), ids.size()));
+                    mModel.setAdapter(new ArrayAdapter<>(this,
+                            android.R.layout.simple_dropdown_item_1line, ids));
+                    String current = mModel.getText().toString().trim();
+                    if (ids.size() == 1) {
+                        if (!ids.get(0).equals(current)) mModel.setText(ids.get(0), false);
+                        saveFields();
+                    } else if (pick) {
+                        String[] items = ids.toArray(new String[0]);
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.settings_models)
+                                .setItems(items, (d, which) -> {
+                                    mModel.setText(items[which], false);
+                                    saveFields();
+                                })
+                                .show();
+                    } else if (!ids.contains(current) && mModel.isAttachedToWindow()) {
+                        mModel.showDropDown();
+                    }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> toast("Failed: " + e.getMessage()));
+                runOnUiThread(() -> {
+                    if (!base.equals(Prefs.normalizeEndpoint(mEndpoint.getText().toString()))) {
+                        return;
+                    }
+                    mModelStatus.setText(getString(R.string.models_failed, e.getMessage()));
+                    if (pick) toast("Failed: " + e.getMessage());
+                });
             }
         }).start();
     }
@@ -437,7 +590,6 @@ public class SettingsActivity extends Activity {
                         .setItems(items, (d, which) -> {
                             mEndpoint.setText(items[which]);
                             saveFields();
-                            pickModel();
                         })
                         .show();
             });

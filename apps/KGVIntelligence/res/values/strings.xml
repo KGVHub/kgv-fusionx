@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">KGV X Intelligence</string>
-    <string name="settings_summary">Research assistant, phone control and AI model</string>
+    <string name="settings_summary">Tap a feature for its settings; use its switch to turn it on or off.</string>
     <string name="accessibility_description">Lets KGV X Intelligence read the screen and tap, type, swipe and take screenshots for you when you ask it to do something. It only acts while a task you started, or an MCP client you connected, is running.</string>
     <string name="greeting">Hi, I\'m KGV X Intelligence. Ask me to find and summarise articles on PubMed, build a literature review, or do something on your phone.</string>
     <string name="hint">Ask or tell me to do something…</string>
@@ -47,12 +47,11 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
     <string name="settings_double_tap_summary">Double-tap the screen to turn it on</string>
     <string name="settings_assistant">Hold Home for KGV X Intelligence (Default apps › Digital assistant)</string>
 
-    <string name="section_ai">KGV AI</string>
+    <string name="section_ai">KGV X AI</string>
     <string name="section_ai_summary">AI model, voice input and phone control</string>
     <string name="section_mcp">MCP server</string>
     <string name="section_mcp_summary">Let MCP clients use the phone\'s skills</string>
-    <string name="section_mcp_details">MCP server settings</string>
-    <string name="section_dns">DNS Server</string>
+    <string name="section_dns">DNS</string>
     <string name="settings_dns_custom_title">Custom DNS servers (IP addresses)</string>
     <string name="settings_dns_custom_help">Up to four, separated by commas. The local resolver still caches and checks DNSSEC, and asks these servers instead of the root servers.</string>
     <string name="settings_dns_apply">Use these servers</string>
@@ -61,7 +60,7 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
     <string name="settings_privacy">Privacy</string>
     <string name="settings_dns">Private DNS</string>
     <string name="settings_dns_summary">KGV FusionX runs its own DNS resolver (Unbound) on the phone. Every website lookup is answered by it, straight from the internet\'s root servers and checked with DNSSEC, instead of by your Wi-Fi owner, mobile network or a DNS company.</string>
-    <string name="settings_dns_fallback">This network blocks it, so the network\'s own DNS is used for now. Try the encrypted mode or custom servers.</string>
+    <string name="settings_dns_fallback">Not reachable on this network, so the network\'s own DNS is used for now. Custom DNS may work here.</string>
     <string name="settings_mcp">MCP server</string>
     <string name="settings_mcp_summary">Lets MCP clients (a local agent in Termux, Claude Desktop or an IDE) use all these skills. Over USB: adb forward tcp:8765 tcp:8765.</string>
     <string name="settings_mcp_on">Run in the background</string>
@@ -75,4 +74,31 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
     <string name="settings_chat">Chat</string>
     <string name="settings_clear">Clear conversation</string>
     <string name="settings_cleared">Cleared</string>
+
+    <string name="ai_on">KGV X AI</string>
+    <string name="ai_on_summary">Off: the assistant won\'t answer or act. The MCP server has its own switch.</string>
+    <string name="ai_off">KGV X AI is switched off. Turn it on in Settings › KGV X Intelligence.</string>
+    <string name="models_loading">Loading models from %1$s…</string>
+    <string name="models_none">The server lists no models; type the model name.</string>
+    <string name="models_failed">Couldn\'t load models: %1$s</string>
+    <plurals name="models_found">
+        <item quantity="one">Found 1 model; it\'s selected.</item>
+        <item quantity="other">Found %1$d models; tap Model to choose one.</item>
+    </plurals>
+
+    <string name="settings_dns_on">Private DNS resolver</string>
+    <string name="settings_dns_on_summary">Off saves a little battery and memory; lookups then go to the network\'s DNS.</string>
+    <string name="settings_dns_off">Off: the network\'s DNS</string>
+    <string name="settings_dns_starting">Starting…</string>
+    <string name="dns_unbound_short">Unbound</string>
+    <string name="dns_custom_short">Custom: %1$s</string>
+
+    <string name="section_adblock">KGV AdBlock</string>
+    <string name="adblock_summary">Blocks about 71,000 ad, tracker and malware domains for every app and browser, with nothing to install.</string>
+    <string name="adblock_on">Block ads and trackers</string>
+    <string name="adblock_on_summary">Uses about 15 MB of memory while on</string>
+    <string name="adblock_how">AdBlock works inside the DNS resolver: blocked names simply don\'t resolve, so ads never load. Turning it on also turns DNS on. If a site breaks, switch AdBlock off. List: StevenBlack unified hosts (MIT licence).</string>
+    <string name="adblock_off">Off</string>
+    <string name="adblock_active">Blocking ads and trackers</string>
+    <string name="adblock_needs_dns">AdBlock needs DNS on to work</string>
 </resources>

@@ -1,0 +1,25 @@
+From 8a73559f676d4f076cbefa7c9e84082d6ba3a6e0 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 20:29:20 +0530
+Subject: [PATCH] Settings: KGV X Intelligence summary mentions DNS and AdBlock
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Icb78832931a0f758f46412e3de005688e8ccf158
+---
+ res/values/kgv_strings.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/res/values/kgv_strings.xml b/res/values/kgv_strings.xml
+index 0db9d55..1c9907f 100644
+--- a/res/values/kgv_strings.xml
++++ b/res/values/kgv_strings.xml
+@@ -2,5 +2,5 @@
+ <!-- KGV FusionX: the KGV X Intelligence entry on the Settings homepage. -->
+ <resources>
+     <string name="kgv_intelligence_title" translatable="false">KGV X Intelligence</string>
+-    <string name="kgv_intelligence_summary" translatable="false">AI research assistant, phone control, MCP</string>
++    <string name="kgv_intelligence_summary" translatable="false">AI assistant, private DNS, AdBlock, MCP</string>
+ </resources>
+-- 
+2.53.0
+

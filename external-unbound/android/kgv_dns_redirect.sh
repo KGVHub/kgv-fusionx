@@ -78,6 +78,10 @@ CONF
     else
         : > $DIR/forward.conf
     fi
+    if [ "$(getprop persist.kgv.dns.adblock)" = 1 ]; then
+        # KGV AdBlock: ad and tracker domains answer NXDOMAIN.
+        printf 'server:\n    include: "/system_ext/etc/unbound/adblock.conf"\n' >> $DIR/forward.conf
+    fi
     chown dns:dns $DIR/root.key $DIR/forward.conf $DIR/ca.pem 2>/dev/null
     chmod 0660 $DIR/root.key $DIR/forward.conf 2>/dev/null
 }

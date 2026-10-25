@@ -68,6 +68,10 @@ final class Agent {
     private static void run(Context context, String request, Callbacks callbacks) {
         Conversation conv = Conversation.get();
         Prefs prefs = new Prefs(context);
+        if (!prefs.aiEnabled()) {
+            conv.add(Conversation.ERROR, context.getString(R.string.ai_off));
+            return;
+        }
         if (!prefs.isConfigured()) {
             conv.add(Conversation.ERROR, context.getString(R.string.not_configured));
             return;
