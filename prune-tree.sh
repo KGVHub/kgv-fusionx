@@ -21,10 +21,19 @@ DIRS="cts/apps cts/common cts/development cts/helpers cts/hostsidetests cts/suit
       frameworks/base/tests prebuilts/vndk
       hardware/qcom-caf/msm8996 hardware/qcom-caf/msm8998 hardware/qcom-caf/sdm660 hardware/qcom-caf/sdm845
       hardware/qcom-caf/sm8150 hardware/qcom-caf/sm8250 hardware/qcom-caf/sm8350 hardware/qcom-caf/sm8450 hardware/qcom-caf/sm8550"
+changed=0
 for d in $DIRS; do
     [ -d "$SRC/$d" ] || continue
-    if [ "${1:-}" = --undo ]; then rm -f "$SRC/$d/.find-ignore"; echo "unpruned $d"
-    else touch "$SRC/$d/.find-ignore"; echo "pruned   $d"; fi
+    if [ "${1:-}" = --undo ]; then
+        [ -e "$SRC/$d/.find-ignore" ] || continue
+        rm -f "$SRC/$d/.find-ignore"; echo "unpruned $d"; changed=1
+    else
+        [ -e "$SRC/$d/.find-ignore" ] && continue
+        touch "$SRC/$d/.find-ignore"; echo "pruned   $d"; changed=1
+    fi
 done
-# The finder caches its results; force a rescan.
-rm -rf "$SRC/out/.module_paths" "$SRC/out/soong/.bootstrap/build-globs.ninja" 2>/dev/null || true
+# The finder caches its results; force a rescan, but only when something changed
+# (build.sh runs this before every build, and a rescan regenerates the Soong graph).
+if [ "$changed" = 1 ]; then
+    rm -rf "$SRC/out/.module_paths" "$SRC/out/soong/.bootstrap/build-globs.ninja" 2>/dev/null || true
+fi

@@ -34,8 +34,33 @@ Settings › KGV X Intelligence, between Network and internet and Connected devi
 
 ## Sync and build
 
-You need about 250 GB of free disk and 8 GB of RAM (no swap file needed). Install
-the [LineageOS build packages](https://wiki.lineageos.org/devices/mido/build) and `repo`, then:
+### What the PC needs
+
+- **8 GB of RAM** is enough: `soong_build` peaks at about 6.1 GB, and `build.sh` runs
+  everything in a 6 GB memory cap so the desktop stays usable.
+- **zram swap, at least 2 GB** (compressed RAM, not a disk swap file). On Ubuntu/Debian:
+
+  ```sh
+  sudo apt install zram-tools
+  printf 'ALGO=zstd\nPERCENT=50\nPRIORITY=100\n' | sudo tee /etc/default/zramswap
+  sudo systemctl restart zramswap
+  ```
+
+- **ncurses 5** for `llvm-rs-cc`. Distros that only ship ncurses 6 need:
+
+  ```sh
+  sudo ln -s libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
+  sudo ln -s libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+  ```
+
+- A **systemd user session** (a normal desktop or SSH login): the memory cap uses
+  `systemd-run --user`.
+- About **250 GB** of free disk, the
+  [LineageOS build packages](https://wiki.lineageos.org/devices/mido/build) and `repo`.
+
+`build.sh` checks all of this before it starts and says what's missing.
+
+### Commands
 
 ```sh
 mkdir kgv-fusionx && cd kgv-fusionx
@@ -61,9 +86,22 @@ projects with KGVHub forks on branch `kgv-1.0`:
 | `packages/apps/KGVIntelligence`, `external/unbound` | KGV X Intelligence, Unbound DNS and AdBlock (new) |
 | `device/xiaomi/mido`, `kernel/xiaomi/mido` | mido trees (from [zeelog](https://github.com/zeelog)) with KGV changes and sepolicy |
 
-`kgv/build.sh` options: `JOBS` (parallel jobs, 4 works on 8 GB), `STAGE` (`graph` for
-the Soong graph only, `full` for the flashable zip, or a module name), `DEVICE`
-(default `mido`), `SRC` (tree path; default: the current directory).
+`kgv/build.sh` options:
+
+| Variable | Default | |
+|---|---|---|
+| `JOBS` | 1 | Parallel jobs; 4 works on 8 GB |
+| `STAGE` | `full` | `graph` (Soong graph only), `full` (flashable zip) or a module name |
+| `DEVICE` | `mido` | Builds `lineage_<DEVICE>-userdebug` |
+| `SRC` | current directory | The source tree |
+| `MEM_LIMIT` | `6000M` | Memory cap (`none` turns it off, for 16 GB+ hosts) |
+| `NO_PRUNE` | | `1` keeps every source folder visible to the build (more RAM) |
+| `SKIP_HOST_CHECKS` | | `1` skips the checks above |
+
+Every build first hides source folders a phone build never uses (tests, CTS, other
+SoCs' HALs) from Soong with `.find-ignore` markers (`prune-tree.sh`; nothing is deleted).
+That, plus the patched blueprint/soong, is what keeps the graph under 6.3 GB. The first
+build takes hours; later builds only rebuild what changed (about 10 minutes here).
 
 ### Other devices
 
