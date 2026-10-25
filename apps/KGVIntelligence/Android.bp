@@ -18,5 +18,8 @@ prebuilt_etc {
     name: "privapp-permissions-org.kgv.intelligence",
     system_ext_specific: true,
     sub_dir: "permissions",
+    // Android reads only *.xml here; without the extension the allowlist is ignored and
+    // system_server stops the boot over WRITE_SECURE_SETTINGS.
+    filename: "privapp-permissions-org.kgv.intelligence.xml",
     src: "etc/privapp-permissions-org.kgv.intelligence.xml",
 }
