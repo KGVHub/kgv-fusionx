@@ -1,0 +1,25 @@
+From ca53385881c106cbdc48cc103ef347788d061743 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 18:53:59 +0530
+Subject: [PATCH] mido: kgv_dns may use UDP sockets
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sepolicy/private/kgv_dns.te | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sepolicy/private/kgv_dns.te b/sepolicy/private/kgv_dns.te
+index e2ce855..92413fa 100644
+--- a/sepolicy/private/kgv_dns.te
++++ b/sepolicy/private/kgv_dns.te
+@@ -18,6 +18,7 @@ dontaudit kgv_dns kernel:system module_request;
+ 
+ # Health checks (nc) and Unbound's files.
+ allow kgv_dns self:tcp_socket create_stream_socket_perms;
++allow kgv_dns self:udp_socket create_socket_perms;
+ allow kgv_dns kgv_unbound_data_file:dir rw_dir_perms;
+ allow kgv_dns kgv_unbound_data_file:file { create_file_perms setattr };
+ allow kgv_dns system_security_cacerts_file:dir r_dir_perms;
+-- 
+2.53.0
+

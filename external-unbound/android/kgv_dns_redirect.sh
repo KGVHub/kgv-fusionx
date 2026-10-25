@@ -32,10 +32,15 @@ unrules() {
     done
 }
 
-# Unbound listens, and a root server answers over TCP port 53 (if the network
-# allows that, it allows recursion too). Forward mode only needs Unbound up.
+# Unbound answers a real query (". NS") without an error, and a root server
+# answers over TCP port 53 (if the network allows that, it allows recursion
+# too). Forward mode only needs Unbound answering. Listening isn't enough:
+# a resolver that refuses or fails every query makes Android mark the Wi-Fi
+# as having no internet and stop joining it.
+QUERY='\022\064\001\000\000\001\000\000\000\000\000\000\000\000\002\000\001'
 healthy() {
-    nc -w 3 127.0.0.1 5353 </dev/null >/dev/null 2>&1 || return 1
+    flags=$( (printf "$QUERY"; sleep 3) | nc -u -W 3 127.0.0.1 5353 | od -An -tx1 -j3 -N1)
+    case "$flags" in *0) ;; *) return 1 ;; esac   # low nibble is the rcode
     [ "$mode" = recursive ] || return 0
     for root in 198.41.0.4 199.9.14.201 192.33.4.12 2001:503:ba3e::2:30; do
         nc -w 3 $root 53 </dev/null >/dev/null 2>&1 && return 0
