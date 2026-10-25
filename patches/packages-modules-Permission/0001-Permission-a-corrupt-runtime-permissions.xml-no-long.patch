@@ -1,0 +1,36 @@
+From 6d3e0c7a70f422a5dc138ab93379ce52abe9b570 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 21:07:59 +0530
+Subject: [PATCH] Permission: a corrupt runtime-permissions.xml no longer
+ bootloops
+
+KGV FusionX. A file cut short by a power loss or crash mid-write threw in
+system_server on every boot. Treat it as missing so permissions reset to
+defaults and the file is rewritten.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Ifc0daab504248e07e06273ae348c448f599391ca
+---
+ .../persistence/RuntimePermissionsPersistenceImpl.java      | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/service/java/com/android/permission/persistence/RuntimePermissionsPersistenceImpl.java b/service/java/com/android/permission/persistence/RuntimePermissionsPersistenceImpl.java
+index 9ba37af..bb9b2ec 100644
+--- a/service/java/com/android/permission/persistence/RuntimePermissionsPersistenceImpl.java
++++ b/service/java/com/android/permission/persistence/RuntimePermissionsPersistenceImpl.java
+@@ -77,7 +77,11 @@ public class RuntimePermissionsPersistenceImpl implements RuntimePermissionsPers
+             Log.i(LOG_TAG, "runtime-permissions.xml not found");
+             return null;
+         } catch (XmlPullParserException | IOException e) {
+-            throw new IllegalStateException("Failed to read runtime-permissions.xml: " + file , e);
++            // KGV FusionX: a file cut short by a power loss or a crash mid-write used to
++            // throw here and bootloop the phone in system_server. Treat it like a missing
++            // file instead: permissions fall back to their defaults and it's written anew.
++            Log.wtf(LOG_TAG, "Failed to read runtime-permissions.xml, starting fresh: " + file, e);
++            return null;
+         }
+     }
+ 
+-- 
+2.53.0
+
