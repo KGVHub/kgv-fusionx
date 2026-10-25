@@ -44,6 +44,7 @@ public class SettingsActivity extends Activity {
     private Switch mAutomation;
     private Switch mDoubleTap;
     private TextView mMcpStatus;
+    private Button mDns;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +151,12 @@ public class SettingsActivity extends Activity {
         col.addView(button(R.string.settings_assistant, v -> startActivity(
                 new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))));
 
+        // ---- privacy ----
+        col.addView(header(getString(R.string.settings_privacy), 15));
+        col.addView(label(getString(R.string.settings_dns_summary)));
+        mDns = button(R.string.settings_dns, v -> pickDns());
+        col.addView(mDns);
+
         // ---- MCP server ----
         col.addView(header(getString(R.string.settings_mcp), 15));
         col.addView(label(getString(R.string.settings_mcp_summary)));
@@ -200,12 +207,31 @@ public class SettingsActivity extends Activity {
         mAutomation.setChecked(Prefs.isAutomationEnabled(this));
         mDoubleTap.setChecked(Prefs.isDoubleTapToWake(this));
         mMcpStatus.postDelayed(this::showMcpStatus, 300);
+        showDns();
     }
 
-    @Override
-    protected void onPause() {
-        saveFields();
-        super.onPause();
+    private void showDns() {
+        String mode = Prefs.dnsMode();
+        String label = mode;
+        for (String[] m : Prefs.DNS_MODES) if (m[1].equals(mode)) label = m[0];
+        String state = Prefs.dnsState();
+        if ("fallback".equals(state)) {
+            label += "\n" + getString(R.string.settings_dns_fallback);
+        }
+        mDns.setText(label);
+    }
+
+    private void pickDns() {
+        String[] items = new String[Prefs.DNS_MODES.length];
+        for (int i = 0; i < items.length; i++) items[i] = Prefs.DNS_MODES[i][0];
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_dns)
+                .setItems(items, (d, which) -> {
+                    Prefs.setDnsMode(this, Prefs.DNS_MODES[which][1]);
+                    mDns.postDelayed(this::showDns, 3000);
+                    showDns();
+                })
+                .show();
     }
 
     private void showProvider(String p) {

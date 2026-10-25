@@ -12,6 +12,7 @@ public class BootReceiver extends BroadcastReceiver {
             Prefs.setAutomationEnabled(context, true);
         }
         Prefs.applyDoubleTapDefault(context);
+        if (!"off".equals(Prefs.dnsMode())) Prefs.setDnsMode(context, Prefs.dnsMode());
         McpService.sync(context);
     }
 }

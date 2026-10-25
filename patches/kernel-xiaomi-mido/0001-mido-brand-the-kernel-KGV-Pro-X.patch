@@ -1,7 +1,7 @@
 From e80387f573e1144f2120a26c13f20649e7114d62 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 07:02:47 +0530
-Subject: [PATCH] mido: brand the kernel KGV-Pro-X
+Subject: [PATCH 1/2] mido: brand the kernel KGV-Pro-X
 
 Release string 4.9.x-KGV-Pro-X, without the git hash suffix.
 

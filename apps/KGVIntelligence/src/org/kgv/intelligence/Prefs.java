@@ -226,6 +226,37 @@ final class Prefs {
         }
     }
 
+    // ---- private DNS: the on-device Unbound resolver (external/unbound) ----
+
+    /** Resolver modes: label, then the persist.kgv.dns.mode value. */
+    static final String[][] DNS_MODES = {
+            {"KGV resolver: recursive (no DNS provider sees your lookups)", "recursive"},
+            {"KGV resolver: encrypted via Quad9 (for networks that block recursion)", "tls"},
+            {"Off (the network's DNS)", "off"},
+    };
+
+    static String dnsMode() {
+        String m = android.os.SystemProperties.get("persist.kgv.dns.mode", "");
+        return m.isEmpty() ? "recursive" : m;
+    }
+
+    /** active, fallback (the network blocks it, so the network's DNS is used) or off. */
+    static String dnsState() {
+        return android.os.SystemProperties.get("kgv.dns.state", "starting");
+    }
+
+    static void setDnsMode(Context context, String mode) {
+        // Android's own Private DNS would send lookups to port 853, around Unbound.
+        if (!"off".equals(mode)) {
+            try {
+                Settings.Global.putString(context.getContentResolver(),
+                        Settings.Global.PRIVATE_DNS_MODE, "off");
+            } catch (SecurityException ignored) {
+            }
+        }
+        android.os.SystemProperties.set("persist.kgv.dns.mode", mode);
+    }
+
     static final String DOUBLE_TAP_TO_WAKE = "double_tap_to_wake";
 
     static boolean isDoubleTapToWake(Context context) {

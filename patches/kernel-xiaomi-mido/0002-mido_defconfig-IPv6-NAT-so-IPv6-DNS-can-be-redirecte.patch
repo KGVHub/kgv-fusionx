@@ -1,0 +1,26 @@
+From 2e4c6848ec5c5d9665fbb5db696f7c55b290e8b8 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 15:11:18 +0530
+Subject: [PATCH 2/2] mido_defconfig: IPv6 NAT, so IPv6 DNS can be redirected
+ to the on-device resolver
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/configs/mido_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/mido_defconfig b/arch/arm64/configs/mido_defconfig
+index 88695cdf9..a67f3f136 100644
+--- a/arch/arm64/configs/mido_defconfig
++++ b/arch/arm64/configs/mido_defconfig
+@@ -238,6 +238,7 @@ CONFIG_IP_NF_ARPFILTER=y
+ CONFIG_IP_NF_ARP_MANGLE=y
+ CONFIG_NF_CONNTRACK_IPV6=y
+ CONFIG_IP6_NF_IPTABLES=y
++CONFIG_IP6_NF_NAT=y
+ CONFIG_IP6_NF_MATCH_RPFILTER=y
+ CONFIG_IP6_NF_FILTER=y
+ CONFIG_IP6_NF_TARGET_REJECT=y
+-- 
+2.53.0
+

@@ -47,6 +47,10 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
     <string name="settings_double_tap_summary">Double-tap the screen to turn it on</string>
     <string name="settings_assistant">Hold Home for KGV X Intelligence (Default apps › Digital assistant)</string>
 
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_dns">Private DNS</string>
+    <string name="settings_dns_summary">KGV FusionX runs its own DNS resolver (Unbound) on the phone. Every website lookup is answered by it, straight from the internet\'s root servers and checked with DNSSEC, instead of by your Wi-Fi owner, mobile network or a DNS company.</string>
+    <string name="settings_dns_fallback">This network blocks direct DNS, so its own DNS is used for now. Try the encrypted mode.</string>
     <string name="settings_mcp">MCP server</string>
     <string name="settings_mcp_summary">Lets MCP clients (a local agent in Termux, Claude Desktop or an IDE) use all these skills. Over USB: adb forward tcp:8765 tcp:8765.</string>
     <string name="settings_mcp_on">Run in the background</string>

@@ -144,7 +144,8 @@ public class AssistActivity extends Activity implements Conversation.Listener {
 
     private View bubble(int kind, String text) {
         TextView tv = new TextView(this);
-        tv.setText(text);
+        tv.setText(kind == Conversation.USER || kind == Conversation.STEP ? text
+                : Markdown.render(text));
         tv.setTextIsSelectable(kind != Conversation.STEP);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, kind == Conversation.STEP ? 12 : 15);
         tv.setLineSpacing(0, 1.15f);

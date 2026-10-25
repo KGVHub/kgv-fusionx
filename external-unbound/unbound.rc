@@ -1,0 +1,30 @@
+# KGV FusionX: the on-device Unbound resolver and the redirect of all DNS to it.
+# persist.kgv.dns.mode: recursive (the default when unset), tls (forward to
+# Quad9 over TLS) or off. Changing it restarts both.
+
+on post-fs-data
+    mkdir /data/misc/kgv_unbound 0770 dns dns
+
+service kgv_unbound /system_ext/bin/unbound -d -c /system_ext/etc/unbound/unbound.conf
+    class main
+    user dns
+    group dns inet
+    disabled
+
+service kgv_dns /system_ext/bin/kgv_dns_redirect start
+    user root
+    group root inet dns
+    disabled
+
+on property:sys.boot_completed=1
+    restart kgv_dns
+
+on property:persist.kgv.dns.mode=*
+    restart kgv_dns
+
+# kgv_dns sets kgv.dns.ready once Unbound's files for the mode are in place.
+on property:kgv.dns.ready=*
+    restart kgv_unbound
+
+on property:kgv.dns.ready=off
+    stop kgv_unbound
