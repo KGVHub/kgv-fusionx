@@ -1,0 +1,35 @@
+From d091b0d7e24d1b6690585f402b215acfc197a69a Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 21:50:00 +0530
+Subject: [PATCH] PackageManager: parsed-package cache keyed on build time too
+
+KGV FusionX. The incremental version can repeat across builds and system
+APKs carry a fixed timestamp, so a new build reused stale parsed packages;
+a stale label resource id crashed SystemUI on every toast.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I3d4b5fee3880bee878ea3aef5d436f893182d18f
+---
+ .../com/android/server/pm/PackageManagerServiceUtils.java    | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/services/core/java/com/android/server/pm/PackageManagerServiceUtils.java b/services/core/java/com/android/server/pm/PackageManagerServiceUtils.java
+index 6a7dd8aa..f3f35f0f 100644
+--- a/services/core/java/com/android/server/pm/PackageManagerServiceUtils.java
++++ b/services/core/java/com/android/server/pm/PackageManagerServiceUtils.java
+@@ -1333,8 +1333,11 @@ public class PackageManagerServiceUtils {
+         // There are several items that need to be combined together to safely
+         // identify cached items. In particular, changing the value of certain
+         // feature flags should cause us to invalidate any caches.
++        // KGV FusionX: plus the build time. The incremental version can stay the same across
++        // builds, and system APKs all carry the same fixed timestamp, so a new build would
++        // otherwise reuse stale parsed packages (e.g. old resource ids crashing SystemUI).
+         final String cacheName = FORCE_PACKAGE_PARSED_CACHE_ENABLED ? "debug"
+-                : Build.VERSION.INCREMENTAL;
++                : Build.VERSION.INCREMENTAL + "-" + Build.TIME;
+ 
+         // Reconcile cache directories, keeping only what we'd actually use.
+         for (File cacheDir : FileUtils.listFilesOrEmpty(cacheBaseDir)) {
+-- 
+2.53.0
+
