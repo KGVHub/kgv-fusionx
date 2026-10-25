@@ -39,7 +39,6 @@ final class Prefs {
 
     static String defaultEndpoint(String provider) {
         switch (provider) {
-            case LOCAL: return "http://127.0.0.1:8080/v1";
             case OPENROUTER: return "https://openrouter.ai/api/v1";
             default: return "";
         }

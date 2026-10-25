@@ -99,6 +99,7 @@ public class SettingsActivity extends Activity {
         row.addView(button(R.string.settings_models, v -> pickModel()));
         row.addView(button(R.string.settings_test, v -> test()));
         col.addView(row);
+        col.addView(button(R.string.settings_find_pc, v -> findPc()));
 
         col.addView(toggle(R.string.settings_local_only, R.string.settings_local_only_summary,
                 mPrefs.localOnly(), (b, on) -> {
@@ -216,6 +217,7 @@ public class SettingsActivity extends Activity {
             case Prefs.LOCAL:
                 mProviderHelp.setText(R.string.provider_local_help);
                 mModel.setHint("qwen3.5-4b");
+                mEndpoint.setHint("http://192.168.1.10:8080/v1");
                 break;
             case Prefs.OPENROUTER:
                 mProviderHelp.setText(R.string.provider_openrouter_help);
@@ -283,6 +285,29 @@ public class SettingsActivity extends Activity {
             }
             String r = result;
             runOnUiThread(() -> toast(r));
+        }).start();
+    }
+
+    /** Looks for llama.cpp, Ollama or LM Studio on the Wi-Fi and fills in the first one. */
+    private void findPc() {
+        toast(getString(R.string.settings_finding));
+        new Thread(() -> {
+            List<String> found = LanScan.find(this);
+            runOnUiThread(() -> {
+                if (found.isEmpty()) {
+                    toast(getString(R.string.settings_find_none));
+                    return;
+                }
+                String[] items = found.toArray(new String[0]);
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.settings_find_pc)
+                        .setItems(items, (d, which) -> {
+                            mEndpoint.setText(items[which]);
+                            saveFields();
+                            pickModel();
+                        })
+                        .show();
+            });
         }).start();
     }
 

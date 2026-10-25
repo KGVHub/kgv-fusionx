@@ -15,7 +15,9 @@
     <string name="provider_local">Local (on this phone or your network)</string>
     <string name="provider_openrouter">OpenRouter</string>
     <string name="provider_custom">Other OpenAI-compatible server</string>
-    <string name="provider_local_help">Runs on your own hardware, so nothing you ask leaves it. Point it at an OpenAI-compatible server: llama.cpp (llama-server --jinja, port 8080), Ollama (port 11434/v1) or LM Studio on a PC (port 1234/v1). Qwen3.5 4B works well on a PC or laptop; use a model with tool calling.</string>
+    <string name="provider_local_help">Use the AI on your home PC: install llama.cpp, start it with
+  llama-server -m Qwen3.5-4B.gguf --jinja --host 0.0.0.0 --port 8080
+then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves your home. Ollama (port 11434) and LM Studio (port 1234) work too.</string>
     <string name="provider_openrouter_help">Hundreds of hosted models with one key from openrouter.ai/keys. Pick one that supports tools; models with vision can read screenshots.</string>
     <string name="provider_custom_help">Any server with the OpenAI /chat/completions API (OpenAI, Groq, Together, vLLM…).</string>
     <string name="settings_endpoint">Base URL</string>
@@ -24,6 +26,9 @@
     <string name="settings_save">Save</string>
     <string name="settings_models">Models</string>
     <string name="settings_test">Test</string>
+    <string name="settings_find_pc">Find my PC on Wi-Fi</string>
+    <string name="settings_finding">Looking for llama.cpp on your Wi-Fi…</string>
+    <string name="settings_find_none">No AI server found. Is the PC on the same Wi-Fi, started with --host 0.0.0.0, and allowed through its firewall?</string>
     <string name="settings_saved">Saved</string>
     <string name="settings_local_only">Local only</string>
     <string name="settings_local_only_summary">Only the local model controls the phone and sees your data; cloud models are locked out.</string>
