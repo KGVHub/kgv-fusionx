@@ -8,7 +8,7 @@
 #   5. The build is the OOM killer's first victim (oom_score_adj 500), not the
 #      desktop or this shell.
 #   6. Staged: soong/kati graph first (STAGE=graph), then the image.
-# usage: [JOBS=n] [STAGE=graph|full|<target>] fusionx-port/build.sh
+# usage: [JOBS=n] [STAGE=graph|full|<target>] [DEVICE=mido] [SRC=<tree>] <this dir>/build.sh
 set -euo pipefail
 # Hard memory budget: run inside a cgroup capped at MEM_LIMIT (zram swap capped at SWAP_MAX),
 # so a breach kills only the build. MEM_LIMIT=none disables it.
@@ -20,10 +20,15 @@ if [ "$MEM_LIMIT" != none ] && [ -z "${KGV_IN_SCOPE:-}" ]; then
        -p CPUWeight=10 -p IOWeight=10 \
        nice -n 19 ionice -c 2 -n 7 env KGV_IN_SCOPE=1 "$0" "$@"
 fi
+# The source tree: $SRC if set, else the current directory when it is a tree (synced
+# with manifest/kgv_fusionx.xml, run as `kgv/build.sh` from the top), else ../fusionx.
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-SRC=$ROOT/fusionx
+if [ -z "${SRC:-}" ]; then
+  if [ -f "$PWD/build/envsetup.sh" ]; then SRC=$PWD; else SRC=$ROOT/fusionx; fi
+fi
 JOBS=${JOBS:-1}
 STAGE=${STAGE:-full}
+DEVICE=${DEVICE:-mido}          # lunch lineage_$DEVICE-userdebug
 cd "$SRC"
 
 echo 500 > /proc/self/oom_score_adj
@@ -75,16 +80,16 @@ export ENABLE_CFI=false
 # envsetup/lunch rely on unset variables
 set +u
 source build/envsetup.sh
-lunch lineage_mido-userdebug
+lunch "lineage_${DEVICE}-userdebug"
 case "$STAGE" in
   graph) m -j"$JOBS" nothing ;;          # soong + kati only (peak RAM ~4-5 GB)
   full)
     # Fresh build date and number in every image: the build doesn't regenerate
     # build.prop when only the date changes, and Android keys its parsed-package
     # cache on them, so stale app info would otherwise survive a flash.
-    find out/target/product/mido -maxdepth 3 -name build.prop -path "*/mido/*" -delete 2>/dev/null || true
-    rm -rf out/target/product/mido/obj/ETC/*build.prop_intermediates \
-           out/target/product/mido/obj/PACKAGING/*build_prop_intermediates 2>/dev/null || true
+    find "out/target/product/$DEVICE" -maxdepth 3 -name build.prop -delete 2>/dev/null || true
+    rm -rf "out/target/product/$DEVICE"/obj/ETC/*build.prop_intermediates \
+           "out/target/product/$DEVICE"/obj/PACKAGING/*build_prop_intermediates 2>/dev/null || true
     m -j"$JOBS" bacon ;;                 # flashable zip
   *)     m -j"$JOBS" "$STAGE" ;;          # single module/target
 esac

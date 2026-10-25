@@ -24,6 +24,7 @@ Settings › KGV X Intelligence, between Network and internet and Connected devi
 | Path | What |
 |---|---|
 | `build.sh` | Builds the ROM on a 7–8 GB RAM PC (memory-capped, staged) |
+| `manifest/kgv_fusionx.xml` | Local manifest: sync KGV FusionX with `repo` |
 | `patches/<repo>` | Every change to the LineageOS 20 tree, as `git format-patch` series ([how to apply](patches/README.md)) |
 | `apps/KGVIntelligence` | The KGV X Intelligence app (`packages/apps/KGVIntelligence`) |
 | `external-unbound` | Android build files for Unbound 1.26.2, the DNS redirect and AdBlock list (`external/unbound`, [README](external-unbound/README.md)) |
@@ -31,22 +32,58 @@ Settings › KGV X Intelligence, between Network and internet and Connected devi
 | `twrp` | **KGV TWRP** build script and notes ([README](twrp/README-recovery.md)) |
 | `prune-tree.sh` | Trims the source tree for a low-RAM build |
 
-## Build
+## Sync and build
 
-1. Sync LineageOS 20 (`m/lineage-20.0`) with the mido device, kernel and vendor trees
-   into a folder named `fusionx`, and clone this repo next to it as `fusionx-port`:
+You need about 250 GB of free disk and 8 GB of RAM (no swap file needed). Install
+the [LineageOS build packages](https://wiki.lineageos.org/devices/mido/build) and `repo`, then:
 
-       <dir>/fusionx         # LineageOS 20 tree
-       <dir>/fusionx-port    # this repo
+```sh
+mkdir kgv-fusionx && cd kgv-fusionx
+repo init -u https://github.com/LineageOS/android.git -b lineage-20.0 --git-lfs
+mkdir -p .repo/local_manifests
+curl -o .repo/local_manifests/kgv_fusionx.xml \
+  https://raw.githubusercontent.com/KGVHub/kgv-fusionx/main/manifest/kgv_fusionx.xml
+repo sync -c -j4 --no-tags --no-clone-bundle
+JOBS=4 STAGE=full kgv/build.sh
+```
 
-2. Apply the patches ([patches/README.md](patches/README.md)), copy
-   `apps/KGVIntelligence` to `packages/apps/KGVIntelligence`, and set up
-   `external/unbound` ([external-unbound/README.md](external-unbound/README.md)).
-3. Build:
+The ROM lands in `out/target/product/mido/KGV-FusionX-<version>-<date>-mido.zip`.
 
-       JOBS=4 STAGE=full fusionx-port/build.sh
+[`manifest/kgv_fusionx.xml`](manifest/kgv_fusionx.xml) replaces these LineageOS 20
+projects with KGVHub forks on branch `kgv-1.0`:
 
-   Output: `fusionx/out/target/product/mido/KGV-FusionX-<version>-<date>-mido.zip`.
+| Path | Why |
+|---|---|
+| `build/make`, `build/soong`, `build/blueprint` | Low-RAM build: soong_build fits in 6.3 GB, no 32-bit host build |
+| `frameworks/base` | Package cache resets with every build (fixes stale app info after a flash) |
+| `packages/modules/Permission` | A corrupt runtime-permissions.xml no longer bootloops |
+| `packages/apps/Settings` | KGV X Intelligence entry on the Settings home page |
+| `vendor/lineage`, `lineage-sdk` | KGV FusionX branding and version |
+| `packages/apps/KGVIntelligence`, `external/unbound` | KGV X Intelligence, Unbound DNS and AdBlock (new) |
+| `device/xiaomi/mido`, `kernel/xiaomi/mido` | mido trees (from [zeelog](https://github.com/zeelog)) with KGV changes and sepolicy |
+
+`kgv/build.sh` options: `JOBS` (parallel jobs, 4 works on 8 GB), `STAGE` (`graph` for
+the Soong graph only, `full` for the flashable zip, or a module name), `DEVICE`
+(default `mido`), `SRC` (tree path; default: the current directory).
+
+### Other devices
+
+The low-RAM build works for any LineageOS 20 device: keep the `build/*` projects,
+replace the mido device, kernel and vendor projects with your device's, and run
+`DEVICE=<codename> kgv/build.sh`. To get the KGV features, add to your device's `device.mk`:
+
+```make
+PRODUCT_PACKAGES += KGVIntelligence unbound
+```
+
+and copy the KGV sepolicy (`sepolicy/private/kgv_*.te`, the `kgv` entries in
+`property_contexts` and `file_contexts`) from the mido tree. The Settings entry and fixes
+come with the forks.
+
+### Without repo
+
+[`patches/`](patches/README.md) holds every change as `git format-patch` series, to
+apply on a LineageOS 20 tree yourself.
 
 ## Flash
 
