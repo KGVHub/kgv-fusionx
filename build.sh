@@ -83,7 +83,8 @@ case "$STAGE" in
     # build.prop when only the date changes, and Android keys its parsed-package
     # cache on them, so stale app info would otherwise survive a flash.
     find out/target/product/mido -maxdepth 3 -name build.prop -path "*/mido/*" -delete 2>/dev/null || true
-    rm -rf out/target/product/mido/obj/ETC/*build.prop_intermediates 2>/dev/null || true
+    rm -rf out/target/product/mido/obj/ETC/*build.prop_intermediates \
+           out/target/product/mido/obj/PACKAGING/*build_prop_intermediates 2>/dev/null || true
     m -j"$JOBS" bacon ;;                 # flashable zip
   *)     m -j"$JOBS" "$STAGE" ;;          # single module/target
 esac
