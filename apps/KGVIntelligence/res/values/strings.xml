@@ -1,22 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">KGV X Intelligence</string>
-    <string name="settings_summary">Assistant, automations and AI model</string>
-    <string name="accessibility_description">Lets KGV X Intelligence read the screen and tap, type and scroll for you when you ask it to do something. It only acts while a task you started is running.</string>
-    <string name="greeting">Hi, I\'m KGV X Intelligence. Ask me anything, or tell me what to do on your phone.</string>
+    <string name="settings_summary">Research assistant, phone control and AI model</string>
+    <string name="accessibility_description">Lets KGV X Intelligence read the screen and tap, type, swipe and take screenshots for you when you ask it to do something. It only acts while a task you started, or an MCP client you connected, is running.</string>
+    <string name="greeting">Hi, I\'m KGV X Intelligence. Ask me to find and summarise articles on PubMed, build a literature review, or do something on your phone.</string>
     <string name="hint">Ask or tell me to do something…</string>
+    <string name="listening">Listening… tap the mic to stop</string>
     <string name="send">Send</string>
+    <string name="voice">Voice input</string>
     <string name="stop">Stop</string>
-    <string name="not_configured">Set an AI endpoint, API key and model first: Settings › KGV X Intelligence.</string>
-    <string name="settings_endpoint">Endpoint (OpenAI-compatible base URL)</string>
-    <string name="settings_key">API key</string>
+    <string name="not_configured">Choose an AI model first: Settings › KGV X Intelligence.</string>
+
+    <string name="settings_provider">AI model</string>
+    <string name="provider_local">Local (on this phone or your network)</string>
+    <string name="provider_openrouter">OpenRouter</string>
+    <string name="provider_custom">Other OpenAI-compatible server</string>
+    <string name="provider_local_help">Runs on your own hardware, so nothing you ask leaves it. Point it at an OpenAI-compatible server: llama.cpp (llama-server --jinja, port 8080), Ollama (port 11434/v1) or LM Studio on a PC (port 1234/v1). Qwen3.5 4B works well on a PC or laptop; use a model with tool calling.</string>
+    <string name="provider_openrouter_help">Hundreds of hosted models with one key from openrouter.ai/keys. Pick one that supports tools; models with vision can read screenshots.</string>
+    <string name="provider_custom_help">Any server with the OpenAI /chat/completions API (OpenAI, Groq, Together, vLLM…).</string>
+    <string name="settings_endpoint">Base URL</string>
+    <string name="settings_key">API key (optional for local)</string>
     <string name="settings_model">Model</string>
     <string name="settings_save">Save</string>
-    <string name="settings_test">Test connection</string>
+    <string name="settings_models">Models</string>
+    <string name="settings_test">Test</string>
     <string name="settings_saved">Saved</string>
-    <string name="settings_assistant">Use as phone assistant (hold Home)</string>
-    <string name="settings_automation">Automations (accessibility)</string>
-    <string name="settings_on">On</string>
-    <string name="settings_off">Off – tap to turn on</string>
+    <string name="settings_local_only">Local only</string>
+    <string name="settings_local_only_summary">Only the local model controls the phone and sees your data; cloud models are locked out.</string>
+    <string name="settings_vision">Screenshots for the model</string>
+    <string name="settings_vision_summary">Send screenshots so a vision model can see the screen</string>
+
+    <string name="settings_voice">Voice input</string>
+    <string name="settings_voice_summary">Tap the mic in the assistant. Uses the phone\'s speech recognizer if one is installed, otherwise this Whisper-compatible endpoint (e.g. whisper.cpp server) and model.</string>
+
+    <string name="settings_control">Phone control</string>
+    <string name="settings_automation">Automations</string>
+    <string name="settings_automation_summary">Read the screen, tap, type, swipe and open apps</string>
+    <string name="settings_shell">System shell</string>
+    <string name="settings_shell_summary">Let the model run commands as the Android system user</string>
+    <string name="settings_double_tap">Double tap to wake</string>
+    <string name="settings_double_tap_summary">Double-tap the screen to turn it on</string>
+    <string name="settings_assistant">Hold Home for KGV X Intelligence (Default apps › Digital assistant)</string>
+
+    <string name="settings_mcp">MCP server</string>
+    <string name="settings_mcp_summary">Lets MCP clients (a local agent in Termux, Claude Desktop or an IDE) use all these skills. Over USB: adb forward tcp:8765 tcp:8765.</string>
+    <string name="settings_mcp_on">Run in the background</string>
+    <string name="settings_mcp_lan">Allow from the local network</string>
+    <string name="settings_mcp_lan_summary">Clients on your Wi-Fi can connect with the token</string>
+    <string name="settings_mcp_status">%1$s · POST /mcp on port %2$d</string>
+    <string name="settings_mcp_apply">Apply port</string>
+    <string name="settings_mcp_copy">Copy client config</string>
+    <string name="settings_mcp_copied">Copied, with the access token. Keep it private.</string>
+
+    <string name="settings_chat">Chat</string>
     <string name="settings_clear">Clear conversation</string>
+    <string name="settings_cleared">Cleared</string>
 </resources>

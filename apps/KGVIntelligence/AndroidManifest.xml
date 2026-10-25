@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.kgv.intelligence">
+    package="org.kgv.intelligence"
+    android:sharedUserId="android.uid.system">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:label="@string/app_name"
         android:icon="@drawable/ic_kgv"
         android:allowBackup="false"
+        android:usesCleartextTraffic="true"
         android:supportsRtl="true">
 
         <!-- Opened by holding Home once KGV X Intelligence is the assistant. -->
@@ -32,24 +38,15 @@
             </intent-filter>
         </activity>
 
-        <!-- Shown as "KGV X Intelligence" on the main Settings page. -->
+        <!-- Opened from Settings › KGV X Intelligence (packages/apps/Settings
+             top_level_settings.xml, between Network & internet and Connected devices). -->
         <activity
             android:name=".SettingsActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:icon="@drawable/ic_kgv"
-            android:theme="@style/Theme.KGV.Settings">
-            <intent-filter>
-                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
-            </intent-filter>
-            <meta-data android:name="com.android.settings.category"
-                android:value="com.android.settings.category.ia.homepage" />
-            <meta-data android:name="com.android.settings.order" android:value="-90" />
-            <meta-data android:name="com.android.settings.summary"
-                android:resource="@string/settings_summary" />
-            <meta-data android:name="com.android.settings.icon"
-                android:resource="@drawable/ic_kgv_settings" />
-        </activity>
+            android:theme="@style/Theme.KGV.Settings"
+            android:windowSoftInputMode="stateHidden" />
 
         <service
             android:name=".AgentService"
@@ -62,6 +59,10 @@
             <meta-data android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service" />
         </service>
+
+        <service
+            android:name=".McpService"
+            android:exported="false" />
 
         <receiver android:name=".BootReceiver" android:exported="false">
             <intent-filter>

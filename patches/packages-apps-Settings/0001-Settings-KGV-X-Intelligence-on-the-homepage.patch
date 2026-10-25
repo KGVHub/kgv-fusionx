@@ -1,0 +1,99 @@
+From 920e2d9d0c89445cf45b416c8f731f4ba11813fe Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 13:36:12 +0530
+Subject: [PATCH] Settings: KGV X Intelligence on the homepage
+
+Between Network & internet and Connected devices, opening
+org.kgv.intelligence/.SettingsActivity.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Ia4774440ea8297430149640bec1f6411b8edc932
+---
+ res/drawable/ic_homepage_kgv_intelligence.xml | 18 ++++++++++++++++++
+ res/drawable/ic_kgv_spark.xml                 | 10 ++++++++++
+ res/values/kgv_strings.xml                    |  6 ++++++
+ res/xml/top_level_settings.xml                | 13 +++++++++++++
+ 4 files changed, 47 insertions(+)
+ create mode 100644 res/drawable/ic_homepage_kgv_intelligence.xml
+ create mode 100644 res/drawable/ic_kgv_spark.xml
+ create mode 100644 res/values/kgv_strings.xml
+
+diff --git a/res/drawable/ic_homepage_kgv_intelligence.xml b/res/drawable/ic_homepage_kgv_intelligence.xml
+new file mode 100644
+index 0000000..1303c54
+--- /dev/null
++++ b/res/drawable/ic_homepage_kgv_intelligence.xml
+@@ -0,0 +1,18 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- KGV FusionX: the KGV X Intelligence spark, in the homepage icon shape. -->
++<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
++
++    <item>
++        <com.android.settingslib.widget.AdaptiveIconShapeDrawable
++            android:width="@dimen/dashboard_tile_image_size"
++            android:height="@dimen/dashboard_tile_image_size"
++            android:color="#FFFF2D3A" />
++    </item>
++
++    <item
++        android:width="@dimen/dashboard_tile_foreground_image_size"
++        android:height="@dimen/dashboard_tile_foreground_image_size"
++        android:start="@dimen/dashboard_tile_foreground_image_inset"
++        android:top="@dimen/dashboard_tile_foreground_image_inset"
++        android:drawable="@drawable/ic_kgv_spark" />
++</layer-list>
+diff --git a/res/drawable/ic_kgv_spark.xml b/res/drawable/ic_kgv_spark.xml
+new file mode 100644
+index 0000000..170acb8
+--- /dev/null
++++ b/res/drawable/ic_kgv_spark.xml
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="utf-8"?>
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24">
++    <path
++        android:fillColor="#FFFFFFFF"
++        android:pathData="M13.5,2L5,14h6l-1.5,8L19,9.5h-6z" />
++</vector>
+diff --git a/res/values/kgv_strings.xml b/res/values/kgv_strings.xml
+new file mode 100644
+index 0000000..0db9d55
+--- /dev/null
++++ b/res/values/kgv_strings.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- KGV FusionX: the KGV X Intelligence entry on the Settings homepage. -->
++<resources>
++    <string name="kgv_intelligence_title" translatable="false">KGV X Intelligence</string>
++    <string name="kgv_intelligence_summary" translatable="false">AI research assistant, phone control, MCP</string>
++</resources>
+diff --git a/res/xml/top_level_settings.xml b/res/xml/top_level_settings.xml
+index d050a1f..8789e08 100644
+--- a/res/xml/top_level_settings.xml
++++ b/res/xml/top_level_settings.xml
+@@ -30,6 +30,19 @@
+         settings:highlightableMenuKey="@string/menu_key_network"
+         settings:controller="com.android.settings.network.TopLevelNetworkEntryPreferenceController"/>
+ 
++    <!-- KGV FusionX: KGV X Intelligence, between Network & internet and Connected devices. -->
++    <com.android.settings.widget.HomepagePreference
++        android:icon="@drawable/ic_homepage_kgv_intelligence"
++        android:key="top_level_kgv_intelligence"
++        android:order="-147"
++        android:title="@string/kgv_intelligence_title"
++        android:summary="@string/kgv_intelligence_summary">
++        <intent
++            android:action="android.intent.action.MAIN"
++            android:targetPackage="org.kgv.intelligence"
++            android:targetClass="org.kgv.intelligence.SettingsActivity" />
++    </com.android.settings.widget.HomepagePreference>
++
+     <com.android.settings.widget.HomepagePreference
+         android:fragment="com.android.settings.communal.CommunalDashboardFragment"
+         android:icon="@drawable/ia_settings_communal"
+-- 
+2.53.0
+

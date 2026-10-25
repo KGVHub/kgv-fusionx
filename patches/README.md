@@ -14,3 +14,8 @@ copy it in before building:
         branding/src/KGVHub_072012.jpg branding/out
     cp branding/out/bootanimation.zip \
         ../fusionx/device/xiaomi/mido/bootanimation/
+
+`packages-apps-Settings` adds the KGV X Intelligence entry to the Settings
+homepage. The app itself is a separate repo, copied in `apps/KGVIntelligence`:
+
+    cp -r ~/claude/fusionx-port/apps/KGVIntelligence ../fusionx/packages/apps/

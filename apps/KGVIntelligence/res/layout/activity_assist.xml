@@ -100,6 +100,15 @@
                 android:textSize="15sp" />
 
             <ImageButton
+                android:id="@+id/mic"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/voice"
+                android:src="@drawable/ic_mic" />
+
+            <ImageButton
                 android:id="@+id/send"
                 android:layout_width="40dp"
                 android:layout_height="40dp"

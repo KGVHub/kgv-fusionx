@@ -17,6 +17,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /** The chat sheet: transparent and blurred over the current app, opened by holding Home. */
 public class AssistActivity extends Activity implements Conversation.Listener {
@@ -24,7 +25,8 @@ public class AssistActivity extends Activity implements Conversation.Listener {
     private ScrollView mScroll;
     private EditText mInput;
     private ImageButton mSend;
-    private TextView mTyping;
+    private ImageButton mMic;
+    private Voice mVoice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +42,28 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         findViewById(R.id.settings).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
         mSend.setOnClickListener(v -> send());
+        mMic = findViewById(R.id.mic);
+        mVoice = new Voice(this, new Voice.Listener() {
+            @Override
+            public void onListening(boolean listening) {
+                mMic.setColorFilter(listening ? getColor(R.color.kgv_red) : 0xFFFFFFFF);
+                mInput.setHint(listening ? getString(R.string.listening)
+                        : getString(R.string.hint));
+            }
+
+            @Override
+            public void onText(String text) {
+                mInput.setText(text);
+                send();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(AssistActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+        mMic.setColorFilter(0xFFFFFFFF);
+        mMic.setOnClickListener(v -> mVoice.toggle());
         mInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEND || (event != null
                     && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
@@ -61,6 +85,13 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         if (new Prefs(this).automationWanted() && !Prefs.isAutomationEnabled(this)) {
             Prefs.setAutomationEnabled(this, true);
         }
+        McpService.sync(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        mVoice.release();
+        super.onDestroy();
     }
 
     @Override

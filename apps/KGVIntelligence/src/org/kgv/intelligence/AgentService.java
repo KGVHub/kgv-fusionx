@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -19,6 +20,7 @@ import android.os.Looper;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -31,6 +33,7 @@ import android.widget.TextView;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -215,6 +218,63 @@ public class AgentService extends AccessibilityService {
 
     String swipe(int x1, int y1, int x2, int y2) throws InterruptedException {
         return gesture(x1, y1, x2, y2, 350);
+    }
+
+    /**
+     * Swipes the finger in a direction across the middle of the screen: "up" moves the
+     * finger up (shows what is below, the next reel or story), "left" goes to the next page.
+     */
+    String swipeDirection(String direction, String distance) throws InterruptedException {
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        int w = dm.widthPixels, h = dm.heightPixels;
+        float f = "short".equals(distance) ? 0.2f : "long".equals(distance) ? 0.6f : 0.4f;
+        int cx = w / 2, cy = h / 2, dy = (int) (h * f / 2), dx = (int) (w * f / 2) + w / 10;
+        switch (direction) {
+            case "up": return gesture(cx, cy + dy, cx, cy - dy, 300);
+            case "down": return gesture(cx, cy - dy, cx, cy + dy, 300);
+            case "left": return gesture(cx + dx, cy, cx - dx, cy, 300);
+            case "right": return gesture(cx - dx, cy, cx + dx, cy, 300);
+            default: return "Direction must be up, down, left or right.";
+        }
+    }
+
+    /** The screen as a JPEG, scaled down so a small vision model can read it quickly. */
+    byte[] screenshot(int maxWidth) throws InterruptedException {
+        CountDownLatch done = new CountDownLatch(1);
+        Bitmap[] shot = new Bitmap[1];
+        takeScreenshot(Display.DEFAULT_DISPLAY, getMainExecutor(), new TakeScreenshotCallback() {
+            @Override
+            public void onSuccess(ScreenshotResult result) {
+                Bitmap hw = Bitmap.wrapHardwareBuffer(result.getHardwareBuffer(),
+                        result.getColorSpace());
+                if (hw != null) {
+                    shot[0] = hw.copy(Bitmap.Config.ARGB_8888, false);
+                    hw.recycle();
+                }
+                result.getHardwareBuffer().close();
+                done.countDown();
+            }
+
+            @Override
+            public void onFailure(int errorCode) {
+                done.countDown();
+            }
+        });
+        done.await(5, TimeUnit.SECONDS);
+        return shot[0] == null ? null : jpeg(shot[0], maxWidth);
+    }
+
+    static byte[] jpeg(Bitmap b, int maxWidth) {
+        if (b.getWidth() > maxWidth) {
+            Bitmap s = Bitmap.createScaledBitmap(b, maxWidth,
+                    b.getHeight() * maxWidth / b.getWidth(), true);
+            b.recycle();
+            b = s;
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.JPEG, 70, out);
+        b.recycle();
+        return out.toByteArray();
     }
 
     String systemAction(String action) throws InterruptedException {
