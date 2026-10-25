@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KGV X Intelligence</string>
+    <string name="settings_summary">Assistant, automations and AI model</string>
+    <string name="accessibility_description">Lets KGV X Intelligence read the screen and tap, type and scroll for you when you ask it to do something. It only acts while a task you started is running.</string>
+    <string name="greeting">Hi, I\'m KGV X Intelligence. Ask me anything, or tell me what to do on your phone.</string>
+    <string name="hint">Ask or tell me to do something…</string>
+    <string name="send">Send</string>
+    <string name="stop">Stop</string>
+    <string name="not_configured">Set an AI endpoint, API key and model first: Settings › KGV X Intelligence.</string>
+    <string name="settings_endpoint">Endpoint (OpenAI-compatible base URL)</string>
+    <string name="settings_key">API key</string>
+    <string name="settings_model">Model</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_test">Test connection</string>
+    <string name="settings_saved">Saved</string>
+    <string name="settings_assistant">Use as phone assistant (hold Home)</string>
+    <string name="settings_automation">Automations (accessibility)</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off – tap to turn on</string>
+    <string name="settings_clear">Clear conversation</string>
+</resources>

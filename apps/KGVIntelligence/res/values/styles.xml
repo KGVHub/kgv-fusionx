@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kgv_red">#FFFF2D3A</color>
+    <color name="kgv_red_dim">#66FF2D3A</color>
+    <color name="sheet">#B0121014</color>
+    <color name="bubble_user">#E6FF2D3A</color>
+    <color name="bubble_ai">#CC26232A</color>
+    <color name="bubble_step">#66000000</color>
+    <color name="text">#FFF4F2F5</color>
+    <color name="text_dim">#FFA9A4AE</color>
+
+    <!-- Transparent window over the current app, blurred behind. -->
+    <style name="Theme.KGV.Assist" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBlurBehindEnabled">true</item>
+        <item name="android:windowBlurBehindRadius">48dp</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.35</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.InputMethod</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:colorAccent">@color/kgv_red</item>
+    </style>
+
+    <style name="Theme.KGV.Settings" parent="@android:style/Theme.DeviceDefault.Settings">
+        <item name="android:colorAccent">@color/kgv_red</item>
+    </style>
+</resources>

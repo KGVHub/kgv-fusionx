@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Red spark on a dark disc: the KGV X Intelligence mark. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#FF121014"
+        android:pathData="M24,2a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <path android:strokeColor="#FFFF2D3A" android:strokeWidth="1.5"
+        android:pathData="M24,3.5a20.5,20.5 0,1 1,0 41a20.5,20.5 0,1 1,0 -41z" />
+    <path android:fillColor="#FFFF2D3A"
+        android:pathData="M27,8L14,27h9l-3,13l14,-20h-9z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M25.5,13L18,24.5h6.5l-1.5,7l6.5,-9.5h-6z" />
+</vector>

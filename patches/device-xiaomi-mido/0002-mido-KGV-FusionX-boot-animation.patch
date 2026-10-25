@@ -1,7 +1,7 @@
 From f74bed530617e21e50cce5e91b1aeeca23acb72b Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 07:26:58 +0530
-Subject: [PATCH 2/2] mido: KGV FusionX boot animation
+Subject: [PATCH 2/3] mido: KGV FusionX boot animation
 
 Lightning strike, neon ignition of the KGV logo and the name charged in
 by an electric scan line, then a looping glow with arcs and sparks.

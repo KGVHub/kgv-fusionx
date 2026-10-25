@@ -1,0 +1,22 @@
+// KGV X Intelligence: the KGV FusionX assistant.
+
+android_app {
+    name: "KGVIntelligence",
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+    system_ext_specific: true,
+    required: ["privapp-permissions-org.kgv.intelligence"],
+    optimize: {
+        enabled: false,
+    },
+}
+
+prebuilt_etc {
+    name: "privapp-permissions-org.kgv.intelligence",
+    system_ext_specific: true,
+    sub_dir: "permissions",
+    src: "etc/privapp-permissions-org.kgv.intelligence.xml",
+}
