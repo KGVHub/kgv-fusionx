@@ -1,7 +1,7 @@
 From c7d52e886fd783661865d77d3231484fff03c6ba Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 15:16:06 +0530
-Subject: [PATCH 5/6] mido: kgv_dns needs no dac_override (it is in the dns
+Subject: [PATCH 5/7] mido: kgv_dns needs no dac_override (it is in the dns
  group)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -1,7 +1,7 @@
 From 8e6808d378f3ee8c841e89b06da4b70704fb2243 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 15:11:18 +0530
-Subject: [PATCH 4/6] mido: ship the Unbound DNS resolver, with its SELinux
+Subject: [PATCH 4/7] mido: ship the Unbound DNS resolver, with its SELinux
  policy
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
