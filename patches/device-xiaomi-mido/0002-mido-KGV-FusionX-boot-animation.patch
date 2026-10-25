@@ -1,0 +1,28 @@
+From f74bed530617e21e50cce5e91b1aeeca23acb72b Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:26:58 +0530
+Subject: [PATCH 2/2] mido: KGV FusionX boot animation
+
+Lightning strike, neon ignition of the KGV logo and the name charged in
+by an electric scan line, then a looping glow with arcs and sparks.
+1080x1920 at 30 fps, rendered by fusionx-port/branding/make_bootanimation.py.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ BoardConfig.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/BoardConfig.mk b/BoardConfig.mk
+index b7c3995..49a1ace 100644
+--- a/BoardConfig.mk
++++ b/BoardConfig.mk
+@@ -170,3 +170,6 @@ WPA_SUPPLICANT_VERSION := VER_0_8_X
+ # Inherit from the proprietary version
+ -include vendor/xiaomi/mido/BoardConfigVendor.mk
+ TARGET_KERNEL_ADDITIONAL_FLAGS += KBUILD_BUILD_USER=kgvarunkanth KBUILD_BUILD_HOST=KGV-FusionX
++
++# KGV FusionX boot animation (fusionx-port/branding/make_bootanimation.py)
++TARGET_BOOTANIMATION := $(DEVICE_PATH)/bootanimation/bootanimation.zip
+-- 
+2.53.0
+

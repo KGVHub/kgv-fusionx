@@ -1,7 +1,7 @@
 From 5203250631f8776577b13cbcbb98550b64063e7e Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 07:02:46 +0530
-Subject: [PATCH] envsetup: allow building without the 2nd host arch
+Subject: [PATCH 1/2] envsetup: allow building without the 2nd host arch
 
 HOST_2ND_ARCH_OVERRIDE=none drops the 32-bit host variants, which an
 8 GB build host cannot afford and a device build does not need.

@@ -1,0 +1,30 @@
+From d7ff8fc476d612437a4494cdd43fa1558e59be8c Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:26:56 +0530
+Subject: [PATCH 2/2] sysprop: prefix the build number with KGV FusionX
+
+Only when FUSIONX_VERSION is set (vendor/lineage/config/version.mk).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I31aac2c32474a885def33dadb48626eb63e8d20b
+---
+ core/sysprop.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/core/sysprop.mk b/core/sysprop.mk
+index 5ff93a1..ba70e97 100644
+--- a/core/sysprop.mk
++++ b/core/sysprop.mk
+@@ -224,6 +224,9 @@ else
+   # Non-user builds should show detailed build information
+   BUILD_DISPLAY_ID := $(BUILD_DESC)
+ endif
++ifneq ($(FUSIONX_VERSION),)
++  BUILD_DISPLAY_ID := KGV FusionX $(FUSIONX_VERSION) - $(BUILD_DISPLAY_ID)
++endif
+ 
+ # TARGET_BUILD_FLAVOR and ro.build.flavor are used only by the test
+ # harness to distinguish builds. Only add _asan for a sanitized build
+-- 
+2.53.0
+

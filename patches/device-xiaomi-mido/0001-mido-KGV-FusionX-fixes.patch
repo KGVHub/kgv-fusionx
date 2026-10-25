@@ -1,7 +1,7 @@
 From b9228b06ac55b732eed585da7d830df3b407c194 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 07:02:46 +0530
-Subject: [PATCH] mido: KGV FusionX fixes
+Subject: [PATCH 1/2] mido: KGV FusionX fixes
 
 - sepolicy: drop the duplicate health-service.qti label, already in
   the common qcom legacy policy (checkfc failed on it)

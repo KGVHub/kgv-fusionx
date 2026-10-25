@@ -1,0 +1,154 @@
+From ffdeb8c034f8fd98f1ca9529a2a1d9a44eac48d0 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Sun, 25 Oct 2026 07:26:57 +0530
+Subject: [PATCH] lineage-sdk: label the version, API level and updates KGV
+ FusionX
+
+English and its regional variants; other languages keep their own
+translations.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I468e53a9c69380c0af7e08a8f741d606c52c51dc
+---
+ lineage/res/res/values-en-rAU/strings.xml | 8 ++++----
+ lineage/res/res/values-en-rCA/strings.xml | 8 ++++----
+ lineage/res/res/values-en-rGB/strings.xml | 8 ++++----
+ lineage/res/res/values-en-rIN/strings.xml | 8 ++++----
+ lineage/res/res/values/strings.xml        | 8 ++++----
+ 5 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/lineage/res/res/values-en-rAU/strings.xml b/lineage/res/res/values-en-rAU/strings.xml
+index 02e171c..a438c4c 100644
+--- a/lineage/res/res/values-en-rAU/strings.xml
++++ b/lineage/res/res/values-en-rAU/strings.xml
+@@ -16,7 +16,7 @@
+      limitations under the License.
+ -->
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+-    <string name="lineageos_system_label">LineageOS System</string>
++    <string name="lineageos_system_label">KGV FusionX System</string>
+     <string name="permlab_modifyProfiles">modify system profiles</string>
+     <string name="permdesc_modifyProfiles">Allows an app to modify system profiles.</string>
+     <string name="permlab_useHardwareFramework">use hardware framework</string>
+@@ -63,9 +63,9 @@
+     <string name="permlab_manageRemotePrefs">manage remote settings</string>
+     <string name="permdesc_manageRemotePrefs">Allows an app to manage remote settings</string>
+     <string name="build_date">Build date</string>
+-    <string name="lineage_api_level">LineageOS API level</string>
+-    <string name="lineage_updates">LineageOS updates</string>
+-    <string name="lineage_version">LineageOS version</string>
++    <string name="lineage_api_level">KGV FusionX API level</string>
++    <string name="lineage_updates">KGV FusionX updates</string>
++    <string name="lineage_version">KGV FusionX version</string>
+     <string name="lineage_vendor_security_patch">Vendor security patch level</string>
+     <string name="unknown">Unknown</string>
+     <string name="app_killed_message">Application killed</string>
+diff --git a/lineage/res/res/values-en-rCA/strings.xml b/lineage/res/res/values-en-rCA/strings.xml
+index 02e171c..a438c4c 100644
+--- a/lineage/res/res/values-en-rCA/strings.xml
++++ b/lineage/res/res/values-en-rCA/strings.xml
+@@ -16,7 +16,7 @@
+      limitations under the License.
+ -->
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+-    <string name="lineageos_system_label">LineageOS System</string>
++    <string name="lineageos_system_label">KGV FusionX System</string>
+     <string name="permlab_modifyProfiles">modify system profiles</string>
+     <string name="permdesc_modifyProfiles">Allows an app to modify system profiles.</string>
+     <string name="permlab_useHardwareFramework">use hardware framework</string>
+@@ -63,9 +63,9 @@
+     <string name="permlab_manageRemotePrefs">manage remote settings</string>
+     <string name="permdesc_manageRemotePrefs">Allows an app to manage remote settings</string>
+     <string name="build_date">Build date</string>
+-    <string name="lineage_api_level">LineageOS API level</string>
+-    <string name="lineage_updates">LineageOS updates</string>
+-    <string name="lineage_version">LineageOS version</string>
++    <string name="lineage_api_level">KGV FusionX API level</string>
++    <string name="lineage_updates">KGV FusionX updates</string>
++    <string name="lineage_version">KGV FusionX version</string>
+     <string name="lineage_vendor_security_patch">Vendor security patch level</string>
+     <string name="unknown">Unknown</string>
+     <string name="app_killed_message">Application killed</string>
+diff --git a/lineage/res/res/values-en-rGB/strings.xml b/lineage/res/res/values-en-rGB/strings.xml
+index bb42282..923e04c 100644
+--- a/lineage/res/res/values-en-rGB/strings.xml
++++ b/lineage/res/res/values-en-rGB/strings.xml
+@@ -16,7 +16,7 @@
+      limitations under the License.
+ -->
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+-    <string name="lineageos_system_label">LineageOS System</string>
++    <string name="lineageos_system_label">KGV FusionX System</string>
+     <string name="permlab_modifyProfiles">modify system profiles</string>
+     <string name="permdesc_modifyProfiles">Allows an app to modify system profiles.</string>
+     <string name="permlab_useHardwareFramework">use hardware framework</string>
+@@ -63,9 +63,9 @@
+     <string name="permlab_manageRemotePrefs">manage remote settings</string>
+     <string name="permdesc_manageRemotePrefs">Allows an app to manage remote settings</string>
+     <string name="build_date">Build date</string>
+-    <string name="lineage_api_level">LineageOS API level</string>
+-    <string name="lineage_updates">LineageOS updates</string>
+-    <string name="lineage_version">LineageOS version</string>
++    <string name="lineage_api_level">KGV FusionX API level</string>
++    <string name="lineage_updates">KGV FusionX updates</string>
++    <string name="lineage_version">KGV FusionX version</string>
+     <string name="lineage_vendor_security_patch">Vendor security patch level</string>
+     <string name="unknown">Unknown</string>
+     <string name="app_killed_message">Application killed</string>
+diff --git a/lineage/res/res/values-en-rIN/strings.xml b/lineage/res/res/values-en-rIN/strings.xml
+index 615379d..77ac141 100644
+--- a/lineage/res/res/values-en-rIN/strings.xml
++++ b/lineage/res/res/values-en-rIN/strings.xml
+@@ -16,7 +16,7 @@
+      limitations under the License.
+ -->
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+-    <string name="lineageos_system_label">LineageOS System</string>
++    <string name="lineageos_system_label">KGV FusionX System</string>
+     <string name="permlab_modifyProfiles">Modify system profiles</string>
+     <string name="permdesc_modifyProfiles">Allows an app to modify system profiles.</string>
+     <string name="permlab_useHardwareFramework">use hardware framework</string>
+@@ -63,9 +63,9 @@
+     <string name="permlab_manageRemotePrefs">manage remote settings</string>
+     <string name="permdesc_manageRemotePrefs">Allows an app to manage remote settings</string>
+     <string name="build_date">Build date</string>
+-    <string name="lineage_api_level">LineageOS API level</string>
+-    <string name="lineage_updates">LineageOS updates</string>
+-    <string name="lineage_version">LineageOS version</string>
++    <string name="lineage_api_level">KGV FusionX API level</string>
++    <string name="lineage_updates">KGV FusionX updates</string>
++    <string name="lineage_version">KGV FusionX version</string>
+     <string name="lineage_vendor_security_patch">Vendor security patch level</string>
+     <string name="unknown">Unknown</string>
+     <string name="app_killed_message">Application killed</string>
+diff --git a/lineage/res/res/values/strings.xml b/lineage/res/res/values/strings.xml
+index fbb6234..492c2da 100644
+--- a/lineage/res/res/values/strings.xml
++++ b/lineage/res/res/values/strings.xml
+@@ -17,7 +17,7 @@
+ -->
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+     <!-- Label for the LineageOS system components when they are shown to the user. -->
+-    <string name="lineageos_system_label">LineageOS System</string>
++    <string name="lineageos_system_label">KGV FusionX System</string>
+ 
+     <!-- Labels for the MODIFY_PROFILES permission. -->
+     <string name="permlab_modifyProfiles">modify system profiles</string>
+@@ -90,11 +90,11 @@
+     <!-- About device screen, build date -->
+     <string name="build_date">Build date</string>
+     <!-- About device screen, LineageOS API Level -->
+-    <string name="lineage_api_level">LineageOS API level</string>
++    <string name="lineage_api_level">KGV FusionX API level</string>
+     <!-- About device screen, LineageOS updates -->
+-    <string name="lineage_updates">LineageOS updates</string>
++    <string name="lineage_updates">KGV FusionX updates</string>
+     <!-- About device screen, LineageOS version -->
+-    <string name="lineage_version">LineageOS version</string>
++    <string name="lineage_version">KGV FusionX version</string>
+     <!-- About device screen, vendor security patch -->
+     <string name="lineage_vendor_security_patch">Vendor security patch level</string>
+ 
+-- 
+2.53.0
+
