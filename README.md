@@ -24,7 +24,7 @@ Settings › KGV X Intelligence, between Network and internet and Connected devi
 | Path | What |
 |---|---|
 | `build.sh` | Builds the ROM on a 7–8 GB RAM PC (memory-capped, staged) |
-| `manifest/kgv_fusionx.xml` | Local manifest: sync KGV FusionX with `repo` |
+| `manifest/kgv_fusionx.xml` | KGV FusionX projects as a local manifest (also `snippets/kgv.xml` in [KGVHub/android](https://github.com/KGVHub/android/tree/kgv-1.0)) |
 | `patches/<repo>` | Every change to the LineageOS 20 tree, as `git format-patch` series ([how to apply](patches/README.md)) |
 | `apps/KGVIntelligence` | The KGV X Intelligence app (`packages/apps/KGVIntelligence`) |
 | `external-unbound` | Android build files for Unbound 1.26.2, the DNS redirect and AdBlock list (`external/unbound`, [README](external-unbound/README.md)) |
@@ -39,17 +39,16 @@ the [LineageOS build packages](https://wiki.lineageos.org/devices/mido/build) an
 
 ```sh
 mkdir kgv-fusionx && cd kgv-fusionx
-repo init -u https://github.com/LineageOS/android.git -b lineage-20.0 --git-lfs
-mkdir -p .repo/local_manifests
-curl -o .repo/local_manifests/kgv_fusionx.xml \
-  https://raw.githubusercontent.com/KGVHub/kgv-fusionx/main/manifest/kgv_fusionx.xml
+repo init -u https://github.com/KGVHub/android.git -b kgv-1.0 --git-lfs
 repo sync -c -j4 --no-tags --no-clone-bundle
 JOBS=4 STAGE=full kgv/build.sh
 ```
 
 The ROM lands in `out/target/product/mido/KGV-FusionX-<version>-<date>-mido.zip`.
 
-[`manifest/kgv_fusionx.xml`](manifest/kgv_fusionx.xml) replaces these LineageOS 20
+[KGVHub/android](https://github.com/KGVHub/android/tree/kgv-1.0) is the KGV FusionX
+manifest: LineageOS 20's, plus `snippets/kgv.xml` (the same as
+[`manifest/kgv_fusionx.xml`](manifest/kgv_fusionx.xml) here), which replaces these
 projects with KGVHub forks on branch `kgv-1.0`:
 
 | Path | Why |
@@ -79,6 +78,11 @@ PRODUCT_PACKAGES += KGVIntelligence unbound
 and copy the KGV sepolicy (`sepolicy/private/kgv_*.te`, the `kgv` entries in
 `property_contexts` and `file_contexts`) from the mido tree. The Settings entry and fixes
 come with the forks.
+
+### On an existing LineageOS 20 tree
+
+Drop [`manifest/kgv_fusionx.xml`](manifest/kgv_fusionx.xml) into `.repo/local_manifests/`
+and `repo sync`.
 
 ### Without repo
 
