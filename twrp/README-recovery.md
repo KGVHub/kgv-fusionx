@@ -1,6 +1,6 @@
 # Recovery for KGV FusionX (mido)
 
-## KGV TWRP (current choice, being tested)
+## KGV TWRP (flashed on the test phone, 2026-10-25)
 
 `build-kgv-twrp.sh` builds `kgv-twrp/kgv-twrp-3.7.0_12-mido.img` from the unofficial
 TWRP 3.7.0_12 A13 image for mido (alone0316, sha256 checked by the script). That image
@@ -10,8 +10,13 @@ KGV FusionX's classic layout: system -> /system_root, vendor -> /vendor (cust pa
 no logical partitions, no /metadata on oem, no androidboot.super_partition, and starts
 decryption without the dynamic-partitions condition.
 
-RAM-tested (`fastboot boot`): unlocks /data (FBE v1 aes-256-xts), mounts /sdcard,
-/system_root and /vendor.
+It also adds a USB rule for adb sideload: the base image only had adb and mtp rules and
+its generic sideload rules need sys.usb.configfs=1 (it has 0), so the phone dropped off
+USB for good in sideload mode.
+
+Tested: unlocks /data (FBE v1 aes-256-xts), mounts /sdcard, /system_root and /vendor,
+adb sideload goes in and comes back to recovery. Flash with
+`fastboot flash recovery kgv-twrp/kgv-twrp-3.7.0_12-mido.img`.
 
 ## Others tried
 
