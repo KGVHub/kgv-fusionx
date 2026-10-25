@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # KGV FusionX (LineageOS 20, Redmi Note 4 "mido") build for a 7-8 GB RAM host
 # WITHOUT a swap file (never add one on this machine). Memory strategy:
-#   1. zstd zram at 100% of RAM (system-wide, /etc/default/zramswap).
+#   1. zstd zram swap at 50% of RAM (system-wide, /etc/default/zramswap); checked below.
 #   2. One build job by default (JOBS=1); raise only for C-heavy stages.
 #   3. Cap every JVM (metalava, R8/D8, javac, kotlinc, dex2oat via Soong).
 #   4. Skip API doc/check generation (metalava is the largest RAM user).
@@ -9,7 +9,35 @@
 #      desktop or this shell.
 #   6. Staged: soong/kati graph first (STAGE=graph), then the image.
 # usage: [JOBS=n] [STAGE=graph|full|<target>] [DEVICE=mido] [SRC=<tree>] <this dir>/build.sh
+#        NO_PRUNE=1 keeps the whole tree visible; SKIP_HOST_CHECKS=1 skips the host checks.
 set -euo pipefail
+HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+
+# Host checks (once, before the memory-capped scope): what this build needs on a
+# 7-8 GB machine. SKIP_HOST_CHECKS=1 skips them.
+if [ -z "${KGV_IN_SCOPE:-}" ] && [ "${SKIP_HOST_CHECKS:-}" != 1 ]; then
+  fail() { echo "build.sh: $*" >&2; echo "  (SKIP_HOST_CHECKS=1 to build anyway)" >&2; exit 1; }
+  mem_kb=$(awk '/^MemTotal/{print $2}' /proc/meminfo)
+  swap_kb=$(awk '/^SwapTotal/{print $2}' /proc/meminfo)
+  [ "$mem_kb" -ge 6800000 ] || fail "needs about 7 GB of RAM or more (found $((mem_kb/1024)) MB)."
+  # soong_build peaks at about 6.1 GB inside a 6.0 GB cap: the rest goes to compressed swap.
+  if [ "$mem_kb" -lt 15000000 ] && [ "$swap_kb" -lt 2000000 ]; then
+    fail "with under 16 GB of RAM, needs 2 GB or more of zram swap (found $((swap_kb/1024)) MB).
+  Ubuntu/Debian: sudo apt install zram-tools, set ALGO=zstd and PERCENT=50 in
+  /etc/default/zramswap, then sudo systemctl restart zramswap. Don't use a disk swap file."
+  fi
+  for lib in libncurses.so.5 libtinfo.so.5; do
+    ldconfig -p 2>/dev/null | grep -q "$lib" || [ -e "/usr/lib/x86_64-linux-gnu/$lib" ] || \
+      fail "llvm-rs-cc needs $lib. On distros with only ncurses 6:
+  sudo ln -s libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
+  sudo ln -s libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5"
+  done
+  if [ "${MEM_LIMIT:-6000M}" != none ] && ! systemd-run --user --scope --quiet true 2>/dev/null; then
+    fail "needs systemd user sessions (systemd-run --user) for the memory cap. Log in to a
+  normal desktop/SSH session, or run with MEM_LIMIT=none (no cap: a 16 GB host only)."
+  fi
+fi
+
 # Hard memory budget: run inside a cgroup capped at MEM_LIMIT (zram swap capped at SWAP_MAX),
 # so a breach kills only the build. MEM_LIMIT=none disables it.
 # The build also gets the lowest CPU and disk priority so the desktop stays
@@ -30,6 +58,11 @@ JOBS=${JOBS:-1}
 STAGE=${STAGE:-full}
 DEVICE=${DEVICE:-mido}          # lunch lineage_$DEVICE-userdebug
 cd "$SRC"
+[ -f build/envsetup.sh ] || { echo "build.sh: $SRC is not an Android tree (no build/envsetup.sh)" >&2; exit 1; }
+
+# Hide source the ROM never builds from Soong, every time (repo sync keeps the
+# markers, and new projects get them). This is a large part of the RAM savings.
+[ "${NO_PRUNE:-}" = 1 ] || SRC=$SRC "$HERE/prune-tree.sh" >/dev/null
 
 echo 500 > /proc/self/oom_score_adj
 export LC_ALL=C
