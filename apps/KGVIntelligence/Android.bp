@@ -2,6 +2,8 @@
 
 android_app {
     name: "KGVIntelligence",
+    // SettingsLib and its dependencies: the settings pages look like stock Settings.
+    defaults: ["SettingsLibDefaults"],
     srcs: ["src/**/*.java"],
     resource_dirs: ["res"],
     platform_apis: true,
