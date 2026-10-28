@@ -1,0 +1,2 @@
+# Soong must not read this repo: apps/ and external-unbound/ are copies of
+# trees synced into packages/apps and external, so their modules would be defined twice.
