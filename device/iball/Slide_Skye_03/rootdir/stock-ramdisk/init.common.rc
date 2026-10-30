@@ -35,7 +35,7 @@ on init
 # @}
 
 on fs
-    ubiattach 0 ubipac
+    # ubiattach 0 ubipac (NAND only; this tablet is eMMC)
     # exec /sbin/resize2fs -ef /fstab.${ro.hardware}
     mount_all /vendor/etc/fstab.${ro.hardware}
     mount pstore pstore /sys/fs/pstore
@@ -430,43 +430,7 @@ on charger
     start console
     load_persist_props
 
-service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
-    class main
-    disabled
-    oneshot
-
-service iprenew_bnep0 /system/bin/dhcpcd -n
-    class main
-    disabled
-    oneshot
-
-service dhcpcd_bt-pan /system/bin/dhcpcd -BKLG
-   disabled
-   oneshot
-
-service iprenew_bt-pan /system/bin/dhcpcd -n
-    disabled
-    oneshot
-
-service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
-    class main
-    disabled
-    oneshot
-
-service iprenew_bnep0 /system/bin/dhcpcd -n
-    class main
-    disabled
-    oneshot
-
-service dhcpcd_bt-pan /system/bin/dhcpcd -BKLG
-   disabled
-   oneshot
-
-service iprenew_bt-pan /system/bin/dhcpcd -n
-    disabled
-    oneshot
-
-    start ylog
+    # start ylog (stray line after a service block in the stock file)
 
 
 service gnss_download /vendor/bin/gnss_download

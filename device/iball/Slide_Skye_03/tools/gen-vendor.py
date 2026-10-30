@@ -30,6 +30,24 @@ for root, dirs, files in os.walk(src):
             continue
         copies.append(rel)
 
+# Stock init scripts that Android 13's host_init_verifier rejects.
+# (old, new) replacements; each old string must be present.
+FIXUPS = {
+    # "user" takes one name; the 8.1 init ignored the extra one.
+    "etc/init/android.hardware.wifi@1.0-service.rc": [
+        (b"    user system wifi\n", b"    user wifi\n")],
+    # NAND-only command (this tablet is eMMC); fstab moved to /vendor.
+    "etc/init/charge.rc": [
+        (b"    ubiattach 0 ubipac\n", b""),
+        (b"mount_all /fstab.${ro.hardware}", b"mount_all /vendor/etc/fstab.${ro.hardware}")],
+    # The rpmbserver and ylog users don't exist on Android 13. Both sockets
+    # are 0666, so system ownership changes nothing for their clients.
+    "etc/init/rpmbserver_androido.rc": [
+        (b"socket rpmbserver stream 0666 rpmbserver rpmbserver", b"socket rpmbserver stream 0666 system system")],
+    "etc/init/ylog_lite.rc": [
+        (b"socket ylog seqpacket 0666 ylog ylog", b"socket ylog seqpacket 0666 system system")],
+}
+
 os.makedirs(out, exist_ok=True)
 proprietary = os.path.join(out, "proprietary")
 for rel in copies:
@@ -41,8 +59,13 @@ for rel in copies:
             os.remove(dst)
         os.symlink(os.readlink(s), dst)
     else:
-        with open(s, "rb") as i, open(dst, "wb") as o:
-            o.write(i.read())
+        with open(s, "rb") as i:
+            data = i.read()
+        for old, new in FIXUPS.get(rel, []):
+            assert old in data, "%s: fixup no longer applies: %r" % (rel, old)
+            data = data.replace(old, new)
+        with open(dst, "wb") as o:
+            o.write(data)
 
 files = [r for r in copies if not os.path.islink(os.path.join(src, r))]
 with open(os.path.join(out, dev + "-vendor.mk"), "w") as m:
