@@ -1,0 +1,15 @@
+# KGV FusionX for the Redmi Note 4 (mido).
+# Runs on the build PC's own source tree (local backend), only when started
+# by hand from the Woodpecker UI ("Run pipeline"). Optional variables:
+# TARGET=mido (required), STAGE (default full), JOBS (default 4).
+when:
+  - event: manual
+    evaluate: 'TARGET == "mido"'
+
+skip_clone: true
+
+steps:
+  - name: build-mido
+    image: bash
+    commands:
+      - bash /home/kgvarunkanth/claude/fusionx-port/ci/mido.sh

@@ -1,0 +1,15 @@
+# KGV FusionX for the iBall Slide Skye 03 (SC7731E).
+# Runs on the build PC's own source tree (local backend), only when started
+# by hand from the Woodpecker UI ("Run pipeline"). Optional variables:
+# TARGET (iball, the default), STAGE (default kgv-images), JOBS (default 4).
+when:
+  - event: manual
+    evaluate: 'TARGET == "iball" || TARGET == ""'
+
+skip_clone: true
+
+steps:
+  - name: build-iball
+    image: bash
+    commands:
+      - bash /home/kgvarunkanth/claude/fusionx-port/ci/iball.sh
