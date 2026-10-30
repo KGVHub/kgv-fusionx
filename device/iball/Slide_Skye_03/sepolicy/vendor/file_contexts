@@ -1,0 +1,1 @@
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/(system|vendor|userdata|cache) u:object_r:block_device:s0
