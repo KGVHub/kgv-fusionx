@@ -1,4 +1,4 @@
-From ee84e7cd4da82bddbff4fcabb3d0412502f2c0b3 Mon Sep 17 00:00:00 2001
+From abf4f1c2679336d960bb4ec369ebde70e5fb6a59 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Fri, 30 Oct 2026 09:32:13 +0530
 Subject: [PATCH] libbinder: fix host build with 32-bit binder
@@ -11,7 +11,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Change-Id: Ief75706bf7c7c9284e460909cd0b829af45dec22
 ---
  libs/binder/IPCThreadState.cpp | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ libs/binder/Parcel.cpp         | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/libs/binder/IPCThreadState.cpp b/libs/binder/IPCThreadState.cpp
 index a62425e984..39b78623fd 100644
@@ -38,6 +39,19 @@ index a62425e984..39b78623fd 100644
              const void* end = ((const uint8_t*)cmds)+bwr.write_size;
              alog << HexDump(cmds, bwr.write_size) << endl;
              while (cmds < end) cmds = printCommand(alog, cmds);
+diff --git a/libs/binder/Parcel.cpp b/libs/binder/Parcel.cpp
+index ed0bca28f5..3b2c623bf2 100644
+--- a/libs/binder/Parcel.cpp
++++ b/libs/binder/Parcel.cpp
+@@ -2315,7 +2315,7 @@ void Parcel::print(TextOutput& to, uint32_t /*flags*/) const
+         for (size_t i=0; i<N; i++) {
+             const flat_binder_object* flat
+                 = reinterpret_cast<const flat_binder_object*>(DATA+OBJS[i]);
+-            to << endl << "Object #" << i << " @ " << (void*)OBJS[i] << ": "
++            to << endl << "Object #" << i << " @ " << (void*)(uint64_t)OBJS[i] << ": "
+                 << TypeCode(flat->hdr.type & 0x7f7f7f00)
+                 << " = " << flat->binder;
+         }
 -- 
 2.53.0
 
