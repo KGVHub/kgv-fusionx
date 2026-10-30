@@ -24,7 +24,6 @@
         <item name="android:colorAccent">@color/kgv_red</item>
     </style>
 
-    <style name="Theme.KGV.Settings" parent="@android:style/Theme.DeviceDefault.Settings">
-        <item name="android:colorAccent">@color/kgv_red</item>
-    </style>
+    <!-- Stock Settings look: SettingsLib's collapsing toolbar and preference theme. -->
+    <style name="Theme.KGV.Settings" parent="@style/Theme.SubSettingsBase" />
 </resources>

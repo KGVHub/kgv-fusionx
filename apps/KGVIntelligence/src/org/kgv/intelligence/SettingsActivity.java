@@ -1,6 +1,5 @@
 package org.kgv.intelligence;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -11,7 +10,6 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -26,6 +24,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
+
+import com.android.settingslib.PrimarySwitchPreference;
+import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -34,9 +38,10 @@ import java.util.List;
 /**
  * Settings › KGV X Intelligence: four switchable features, each with its own page:
  * KGV X AI (the model, voice, phone control), DNS (Unbound or custom servers),
- * KGV AdBlock and the MCP server.
+ * KGV AdBlock and the MCP server. Styled like stock Settings (SettingsLib collapsing
+ * toolbar; the first page is a preference list with primary switches).
  */
-public class SettingsActivity extends Activity {
+public class SettingsActivity extends CollapsingToolbarBaseActivity {
     private Prefs mPrefs;
     private String mShown;
     private RadioGroup mProviders;
@@ -53,11 +58,10 @@ public class SettingsActivity extends Activity {
     private Switch mDoubleTap;
     private TextView mMcpStatus;
     private TextView mDns;
-    private TextView mMainDns;
-    private TextView mMainAdblock;
-    private Switch mMainMcp;
-    private Switch mMainDnsSwitch;
-    private Switch mMainAdblockSwitch;
+    private PrimarySwitchPreference mMainAi;
+    private PrimarySwitchPreference mMainDns;
+    private PrimarySwitchPreference mMainAdblock;
+    private PrimarySwitchPreference mMainMcp;
     private Switch mDnsSwitch;
     private Switch mAdblockSwitch;
     private EditText mDnsServers;
@@ -66,12 +70,21 @@ public class SettingsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mPrefs = new Prefs(this);
+        String section = getIntent().getStringExtra(EXTRA_SECTION);
+        if (section == null) {
+            setTitle(R.string.app_name);
+            if (savedInstanceState == null) {
+                getSupportFragmentManager().beginTransaction().replace(
+                        R.id.content_frame,
+                        new MainFragment()).commit();
+            }
+            return;
+        }
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(20);
         col.setPadding(pad, pad, pad, pad);
 
-        String section = getIntent().getStringExtra(EXTRA_SECTION);
         if (SECTION_MCP.equals(section)) {
             buildMcp(col);
         } else if (SECTION_DNS.equals(section)) {
@@ -80,12 +93,9 @@ public class SettingsActivity extends Activity {
             buildAdblock(col);
         } else if (SECTION_AI.equals(section)) {
             buildAi(col);
-        } else {
-            buildMain(col);
         }
 
         ScrollView scroll = new ScrollView(this);
-        scroll.setFitsSystemWindows(true);
         scroll.addView(col);
         setContentView(scroll);
     }
@@ -96,42 +106,55 @@ public class SettingsActivity extends Activity {
     static final String SECTION_DNS = "dns";
     static final String SECTION_ADBLOCK = "adblock";
 
-    /** The first page: the four features, each with a switch; tap one for its page. */
-    private void buildMain(LinearLayout col) {
-        col.addView(header(getString(R.string.app_name), 24));
-        col.addView(label(getString(R.string.settings_summary)));
-        col.addView(feature(entry(R.string.section_ai, getString(R.string.section_ai_summary),
-                SECTION_AI), switchFor(mPrefs.aiEnabled(), (b, on) -> mPrefs.setBool("ai", on))));
-        mMainDns = entry(R.string.section_dns, "", SECTION_DNS);
-        mMainDnsSwitch = switchFor(Prefs.dnsOn(), (b, on) -> setDns(on));
-        col.addView(feature(mMainDns, mMainDnsSwitch));
-        mMainAdblock = entry(R.string.section_adblock, "", SECTION_ADBLOCK);
-        mMainAdblockSwitch = switchFor(Prefs.adblock(), (b, on) -> setAdblock(on));
-        col.addView(feature(mMainAdblock, mMainAdblockSwitch));
-        mMainMcp = switchFor(mPrefs.mcpEnabled(), (b, on) -> {
-            mPrefs.setBool("mcp", on);
-            McpService.sync(this);
+    /** The first page: the four features as stock Settings rows (tap for the page, switch at the end). */
+    public static class MainFragment extends PreferenceFragmentCompat {
+        @Override
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(requireContext());
+            ((SettingsActivity) requireActivity()).buildMain(screen);
+            setPreferenceScreen(screen);
+        }
+    }
+
+    private void buildMain(PreferenceScreen screen) {
+        mMainAi = feature(screen, R.string.section_ai, R.drawable.ic_settings_ai, SECTION_AI,
+                mPrefs.aiEnabled(), on -> mPrefs.setBool("ai", on));
+        mMainAi.setSummary(R.string.section_ai_summary);
+        mMainDns = feature(screen, R.string.section_dns, R.drawable.ic_settings_dns, SECTION_DNS,
+                Prefs.dnsOn(), this::setDns);
+        mMainAdblock = feature(screen, R.string.section_adblock, R.drawable.ic_settings_adblock,
+                SECTION_ADBLOCK, Prefs.adblock(), this::setAdblock);
+        mMainMcp = feature(screen, R.string.section_mcp, R.drawable.ic_settings_mcp, SECTION_MCP,
+                mPrefs.mcpEnabled(), on -> {
+                    mPrefs.setBool("mcp", on);
+                    McpService.sync(this);
+                });
+        mMainMcp.setSummary(R.string.section_mcp_summary);
+        showDns();
+    }
+
+    private interface OnToggle {
+        void set(boolean on);
+    }
+
+    private PrimarySwitchPreference feature(PreferenceScreen screen, int title, int icon,
+            String section, boolean on, OnToggle toggle) {
+        PrimarySwitchPreference p = new PrimarySwitchPreference(screen.getContext());
+        p.setKey(section);
+        p.setTitle(title);
+        p.setIcon(icon);
+        p.setPersistent(false);
+        p.setChecked(on);
+        p.setOnPreferenceClickListener(pref -> {
+            open(section);
+            return true;
         });
-        col.addView(feature(entry(R.string.section_mcp, getString(R.string.section_mcp_summary),
-                SECTION_MCP), mMainMcp));
-    }
-
-    /** A feature row: its title and summary (tap for its page) with its switch at the end. */
-    private LinearLayout feature(TextView entry, Switch toggle) {
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(entry, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        toggle.setPadding(dp(12), 0, 0, 0);
-        row.addView(toggle);
-        return row;
-    }
-
-    private Switch switchFor(boolean on, CompoundButton.OnCheckedChangeListener listener) {
-        Switch s = new Switch(this);
-        s.setChecked(on);
-        s.setOnCheckedChangeListener(listener);
-        return s;
+        p.setOnPreferenceChangeListener((pref, value) -> {
+            toggle.set((Boolean) value);
+            return true;
+        });
+        screen.addPreference(p);
+        return p;
     }
 
     /** DNS on or off, kept in step on every page; off also means AdBlock can't work. */
@@ -155,36 +178,13 @@ public class SettingsActivity extends Activity {
         getWindow().getDecorView().postDelayed(this::showDns, 12000);
     }
 
-    private TextView entry(int title, String summary, String section) {
-        TextView tv = new TextView(this);
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
-        tv.setPadding(0, dp(16), 0, dp(16));
-        tv.setTag(title);
-        setEntry(tv, summary);
-        tv.setBackgroundResource(android.R.drawable.list_selector_background);
-        tv.setOnClickListener(v -> open(section));
-        return tv;
-    }
-
-    private void setEntry(TextView tv, String summary) {
-        android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder(
-                getString((Integer) tv.getTag()));
-        if (!summary.isEmpty()) {
-            int start = b.length();
-            b.append('\n').append(summary);
-            b.setSpan(new android.text.style.RelativeSizeSpan(0.8f), start, b.length(), 0);
-            b.setSpan(new android.text.style.ForegroundColorSpan(0xFF9E9E9E), start, b.length(), 0);
-        }
-        tv.setText(b);
-    }
-
     private void open(String section) {
         startActivity(new Intent(this, SettingsActivity.class).putExtra(EXTRA_SECTION, section));
     }
 
     /** DNS: on/off, then the on-device Unbound resolver or the user's own DNS servers. */
     private void buildDns(LinearLayout col) {
-        col.addView(header(getString(R.string.section_dns), 24));
+        setTitle(R.string.section_dns);
         col.addView(label(getString(R.string.settings_dns_summary)));
         mDnsSwitch = toggle(R.string.settings_dns_on, R.string.settings_dns_on_summary,
                 Prefs.dnsOn(), (b, on) -> setDns(on));
@@ -232,7 +232,7 @@ public class SettingsActivity extends Activity {
 
     /** KGV AdBlock: ad and tracker domains blocked by the resolver for every app. */
     private void buildAdblock(LinearLayout col) {
-        col.addView(header(getString(R.string.section_adblock), 24));
+        setTitle(R.string.section_adblock);
         col.addView(label(getString(R.string.adblock_summary)));
         mAdblockSwitch = toggle(R.string.adblock_on, R.string.adblock_on_summary,
                 Prefs.adblock(), (b, on) -> setAdblock(on));
@@ -256,7 +256,7 @@ public class SettingsActivity extends Activity {
 
     /** MCP server: on/off, network access, port and the client config. */
     private void buildMcp(LinearLayout col) {
-        col.addView(header(getString(R.string.section_mcp), 24));
+        setTitle(R.string.section_mcp);
         col.addView(label(getString(R.string.settings_mcp_summary)));
         col.addView(toggle(R.string.settings_mcp_on, 0, mPrefs.mcpEnabled(), (b, on) -> {
             mPrefs.setBool("mcp", on);
@@ -289,7 +289,7 @@ public class SettingsActivity extends Activity {
 
     /** KGV AI: the model, voice, phone control and the chat. */
     private void buildAi(LinearLayout col) {
-        col.addView(header(getString(R.string.section_ai), 24));
+        setTitle(R.string.section_ai);
         col.addView(toggle(R.string.ai_on, R.string.ai_on_summary, mPrefs.aiEnabled(),
                 (b, on) -> mPrefs.setBool("ai", on)));
 
@@ -424,8 +424,9 @@ public class SettingsActivity extends Activity {
         if (mDoubleTap != null) mDoubleTap.setChecked(Prefs.isDoubleTapToWake(this));
         if (mMcpStatus != null) mMcpStatus.postDelayed(this::showMcpStatus, 300);
         if (mMainMcp != null) mMainMcp.setChecked(mPrefs.mcpEnabled());
+        if (mMainAi != null) mMainAi.setChecked(mPrefs.aiEnabled());
         showDns();
-        if (mMainAdblock != null) mMainAdblock.postDelayed(this::showDns, 1500);
+        if (mMainAdblock != null) getWindow().getDecorView().postDelayed(this::showDns, 1500);
     }
 
     /** DNS and AdBlock switches, mode and state, on every page that shows them. */
@@ -443,15 +444,15 @@ public class SettingsActivity extends Activity {
                 ? getString(R.string.settings_dns_fallback)
                 : "active".equals(state) ? getString(R.string.settings_dns_active)
                 : getString(R.string.settings_dns_starting);
-        if (mMainDns != null) setEntry(mMainDns, status.isEmpty() ? label : label + " · " + status);
+        if (mMainDns != null) mMainDns.setSummary(status.isEmpty() ? label : label + " · " + status);
         if (mDns != null) mDns.setText(status.isEmpty() ? label : label + "\n" + status);
         boolean ad = Prefs.adblock();
         String adLabel = !ad ? getString(R.string.adblock_off)
                 : on ? getString(R.string.adblock_active) : getString(R.string.adblock_needs_dns);
-        if (mMainAdblock != null) setEntry(mMainAdblock, adLabel);
-        setQuietly(mMainDnsSwitch, on, (b, v) -> setDns(v));
+        if (mMainAdblock != null) mMainAdblock.setSummary(adLabel);
+        if (mMainDns != null) mMainDns.setChecked(on);
+        if (mMainAdblock != null) mMainAdblock.setChecked(ad);
         setQuietly(mDnsSwitch, on, (b, v) -> setDns(v));
-        setQuietly(mMainAdblockSwitch, ad, (b, v) -> setAdblock(v));
         setQuietly(mAdblockSwitch, ad, (b, v) -> setAdblock(v));
     }
 
@@ -644,7 +645,9 @@ public class SettingsActivity extends Activity {
         tv.setText(text);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         tv.setPadding(0, dp(18), 0, dp(4));
-        tv.setTextColor(getColor(R.color.kgv_red));
+        TypedValue accent = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.colorAccent, accent, true);
+        tv.setTextColor(accent.data);
         return tv;
     }
 

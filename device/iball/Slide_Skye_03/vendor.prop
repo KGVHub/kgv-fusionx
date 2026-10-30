@@ -1,0 +1,5 @@
+ro.config.low_ram=true
+ro.lmk.use_psi=false
+ro.lmk.use_minfree_levels=true
+ro.boot.avb_version=1.0
+ro.product.first_api_level=27

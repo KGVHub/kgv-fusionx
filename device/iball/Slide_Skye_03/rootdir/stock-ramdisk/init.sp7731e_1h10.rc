@@ -1,0 +1,164 @@
+import /vendor/etc/init/hw/init.common.rc
+
+on post-fs-data
+    mkdir /data/local/slogmodem 0770 shell system
+#add wifi dir
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    mkdir /data/system 0770 system system
+    mkdir /etc/wifi 0770 wifi wifi
+    write /data/misc/wifi/fwpath sta_mode
+    chmod 660 /data/misc/wifi/fwpath
+    chown wifi wifi /data/misc/wifi/fwpath
+    rmdir /data/system/wpa_supplicant
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    #to observe dnsmasq.leases file for dhcp information
+    chown dhcp system /data/misc/dhcp
+    setprop wifi.interface wlan0
+    mkdir /data/misc/dhcp6c 0770 dhcp dhcp
+    chown dhcp system /data/misc/dhcp6c
+
+#modify permission for voicetrigger dev
+    chown system  audio /dev/rt5512
+    chmod 660     /dev/rt5512
+
+#add for microarray fingerprint
+    chmod 660 /dev/madev0
+    mkdir /data/system/ma_fingerprint 0770 system system
+    chown system system /dev/madev0
+
+# add for fingerprint app function
+    mkdir /data/sprd 0770 system system
+    mkdir /data/sprd/launchappdata 0770 system system
+    mkdir /data/sprd/applock 0770 system system
+
+
+service p2p_supplicant /vendor/bin/hw/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -m/data/misc/wifi/p2p_supplicant.conf \
+    -puse_p2p_group_interface=1p2p_device=1 \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0 -dd
+    #   we will start as root and wpa_supplicant will switch to user wifi
+    #   after setting up the capabilities required for WEXT
+    #   user wifi
+    #   group wifi inet keystore
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wpa_supplicant /vendor/bin/hw/wpa_supplicant \
+    -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0 -dd
+    group system wifi inet keystore
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+    group system dhcp
+    disabled
+    oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -ABKL
+    group system dhcp
+    disabled
+    oneshot
+
+service dhcpcd_ipv6 /system/bin/dhcpcd -6ABKL
+    group system dhcp
+    disabled
+    oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+    class main
+    group system dhcp
+    disabled
+    oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+    class main
+    group system dhcp
+    disabled
+    oneshot
+
+service enghardwaretest /system/bin/enghardwaretest
+    class main
+    disabled
+    user root
+    oneshot
+
+on boot
+    chmod 666 /dev/ttyS0
+    chown system system /dev/ttyS2
+    chmod 666 /dev/ttyS2
+    chown system camera /dev/sprd_sensor
+    chmod 660 /dev/sprd_sensor
+    chown system camera /dev/sprd_image
+    chmod 660 /dev/sprd_image
+    chown system camera /dev/sprd_jpg
+    chmod 660 /dev/sprd_jpg
+    chown system camera /dev/sprd_cpp
+    chmod 660 /dev/sprd_cpp
+    chown system camera /dev/sprd_scale
+    chmod 660 /dev/sprd_scale
+    chown system camera /dev/sprd_rotation
+    chmod 660 /dev/sprd_rotation
+    chown system camera /dev/sprd_otp
+    chmod 660 /dev/sprd_otp
+#    insmod /vendor/lib/modules/bcmdhd.ko
+    chown system input sys/bus/i2c/devices/1-0019/enable_device
+    chown system input sys/bus/i2c/devices/1-0019/pollrate_ms
+    chown system system /sys/class/leds/red_bl/high_time
+    chown system system /sys/class/leds/red_bl/low_time
+    chown system system /sys/class/leds/red_bl/rising_time
+    chown system system /sys/class/leds/red_bl/falling_time
+    chown system system /sys/class/leds/red_bl/on_off
+
+    chown system system /sys/class/leds/green_bl/high_time
+    chown system system /sys/class/leds/green_bl/low_time
+    chown system system /sys/class/leds/green_bl/rising_time
+    chown system system /sys/class/leds/green_bl/falling_time
+    chown system system /sys/class/leds/green_bl/on_off
+
+    chown system system /sys/class/leds/blue_bl/high_time
+    chown system system /sys/class/leds/blue_bl/low_time
+    chown system system /sys/class/leds/blue_bl/rising_time
+    chown system system /sys/class/leds/blue_bl/falling_time
+    chown system system /sys/class/leds/blue_bl/on_off
+
+    # KGV: restore validated modules to the original boot event.
+    insmod /vendor/lib/modules/sprdbt_tty.ko
+    insmod /vendor/lib/modules/sprd_fm.ko
+    chmod 660 /sys/class/rfkill/rfkill0/state
+    chmod 660 /sys/class/rfkill/rfkill0/type
+    chown bluetooth net_bt_admin /sys/class/rfkill/rfkill0/state
+    chown bluetooth net_bt_admin /sys/class/rfkill/rfkill0/type
+
+# block I/O vm.dirty parameters
+    write /proc/sys/vm/dirty_background_bytes 4194304
+    write /proc/sys/vm/dirty_bytes  52428800
+
+#service download /system/bin/download
+#    class core
+#    user system
+#    group system shell wifi bluetooth
+#    oneshot
+
+#service gnss_download /vendor/bin/gnss_download
+#    class core
+#    user system
+#    group system
+#    oneshot
+
+service gpsd /vendor/bin/gpsd
+    class core
+    user system
+    group gps system shell inet net_raw wifi
+
+service fingerprintd /system/bin/fingerprintd
+    class main
+    user system
+    group system
+

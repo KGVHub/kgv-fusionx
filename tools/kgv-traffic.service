@@ -1,0 +1,8 @@
+[Unit]
+Description=Save GitHub traffic for the KGV FusionX repos
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/claude/fusionx-port/tools/kgv-traffic.py
