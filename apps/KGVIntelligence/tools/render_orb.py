@@ -11,7 +11,7 @@ Pure Python; split the frame range over several processes to go faster."""
 import math, random, sys
 TAU = 2*math.pi
 W = H = int(sys.argv[2]) if len(sys.argv) > 2 else 320
-RED, ROSE, MAGENTA, SCARLET, HOT = 0xD4101F, 0xE0485A, 0xB01040, 0xD8302A, 0xFFD2D7
+RED, ROSE, MAGENTA, SCARLET, HOT = 0xD4101F, 0xE0485A, 0xB01040, 0xD8302A, 0xFFE4E8
 BG = 0x121014                      # @color/sheet in res/values/styles.xml
 def rgb(c): return ((c >> 16) & 255, (c >> 8) & 255, c & 255)
 def unit(v):
@@ -59,7 +59,8 @@ def frame(s, out, sparks_seed):
         r = rc*(1+d)
         px, py, pz = proj(x*r, y*r, z*r)
         depth = (pz/rc+1)/2
-        add(px, py, cs if d > 0.17 else (rgb(ROSE) if depth > 0.7 else cr), 0.16 + 0.42*depth, 0.6)
+        add(px, py, cs if d > 0.14 else (rgb(ROSE) if depth > 0.7 else cr),
+            (0.16 + 0.42*depth)*(1.5 if d > 0.14 else 1), 0.6)
     # Sheets: wide dotted surfaces sweeping around the shell, curling at the edges.
     for sh in SHEETS:
         u, v, n = sh['u'], sh['v'], sh['n']; col = rgb(sh['col']); hot = rgb(HOT)
@@ -78,9 +79,9 @@ def frame(s, out, sparks_seed):
                 dz = (ca*u[2]+sa*v[2])*ct + n[2]*st
                 px, py, pz = proj(dx*r, dy*r, dz*r)
                 depth = (pz/R+1)/2
-                edge = abs(w) > 0.85
+                edge = abs(w) > 0.78
                 add(px, py, hot if edge and depth > 0.5 else col,
-                    (0.10 + 0.40*depth)*taper*(1.8 if edge else 1), 0.55)
+                    (0.10 + 0.40*depth)*taper*(2.6 if edge else 1), 0.6 if edge else 0.55)
     # Sparks: short jagged arcs on the core, re-drawn each frame.
     sr = random.Random(sparks_seed)
     for _ in range(3):
@@ -96,7 +97,7 @@ def frame(s, out, sparks_seed):
             for st in range(steps):
                 f = st/steps; x = x0+(x1-x0)*f; y = y0+(y1-y0)*f
                 add(x, y, rgb(RED), 0.18, 2.6)      # glow
-                add(x, y, rgb(HOT), 0.55, 0.45)     # bright core
+                add(x, y, rgb(HOT), 0.85, 0.5)      # bright core
     # Glass rim (as in the first orb): a thin bright edge, colours turning around it.
     rim = [HOT, RED, MAGENTA, ROSE, SCARLET, HOT]
     rot = -math.degrees(a0)
@@ -110,7 +111,7 @@ def frame(s, out, sparks_seed):
             c0, c1 = rgb(rim[i0]), rgb(rim[min(i0+1, 5)])
             col = [c0[q]*(1-f)+c1[q]*f for q in range(3)]
             a = 0
-            for wdt, al in ((7, 35), (3.5, 80), (1.2, 230)):
+            for wdt, al in ((8, 45), (3.8, 100), (1.5, 255)):
                 if abs(d) < wdt/2: a += al/255*(1-abs(d)/(wdt/2))**0.5
             b = buf[py*W+px]; b[0] += col[0]*a; b[1] += col[1]*a; b[2] += col[2]*a
     # Soft red halo for the glass, clean falloff.
