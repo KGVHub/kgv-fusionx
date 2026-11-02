@@ -1,0 +1,15 @@
+# KGV FusionX: root commands for KGV X Intelligence (kgv_rootd.cpp).
+# persist.kgv.root: 1 (the build default) runs it, 0 stops it (KGV X
+# Intelligence › KGV X AI › Root access).
+service kgv_rootd /system_ext/bin/kgv_rootd
+    class main
+    user root
+    group root system
+    socket kgv_rootd stream 0660 root system
+    disabled
+
+on property:persist.kgv.root=1
+    start kgv_rootd
+
+on property:persist.kgv.root=0
+    stop kgv_rootd

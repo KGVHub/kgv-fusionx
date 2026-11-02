@@ -29,6 +29,10 @@ final class Voice {
         void onText(String text);
 
         void onError(String message);
+
+        /** The voice level while listening, in dB (about -2 to 10), for the glow. */
+        default void onLevel(float rmsDb) {
+        }
     }
 
     private static final int RATE = 16000;
@@ -36,6 +40,17 @@ final class Voice {
 
     private final Context mContext;
     private final Listener mListener;
+
+    /** 16-bit PCM level on the same scale as SpeechRecognizer's onRmsChanged. */
+    private static float levelDb(byte[] pcm, int n) {
+        double sum = 0;
+        for (int i = 0; i + 1 < n; i += 2) {
+            int s = (short) ((pcm[i] & 0xff) | (pcm[i + 1] << 8));
+            sum += (double) s * s;
+        }
+        double rms = Math.sqrt(sum / Math.max(1, n / 2));
+        return (float) (20 * Math.log10(Math.max(1, rms)) - 60);
+    }
     private final Handler mMain = new Handler(Looper.getMainLooper());
     private SpeechRecognizer mRecognizer;
     private volatile boolean mRecording;
@@ -83,6 +98,7 @@ final class Voice {
             @Override public void onBeginningOfSpeech() {
             }
             @Override public void onRmsChanged(float rmsdB) {
+                mListener.onLevel(rmsdB);
             }
             @Override public void onBufferReceived(byte[] buffer) {
             }
@@ -146,7 +162,11 @@ final class Voice {
             long end = System.currentTimeMillis() + MAX_SECONDS * 1000L;
             while (mRecording && System.currentTimeMillis() < end) {
                 int n = rec.read(buf, 0, buf.length);
-                if (n > 0) pcm.write(buf, 0, n);
+                if (n > 0) {
+                    pcm.write(buf, 0, n);
+                    float db = levelDb(buf, n);
+                    mMain.post(() -> mListener.onLevel(db));
+                }
             }
             rec.stop();
             rec.release();

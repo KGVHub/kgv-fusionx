@@ -204,11 +204,11 @@ final class McpServer {
                 case "tools/call": {
                     String name = params.getString("name");
                     JSONObject args = params.optJSONObject("arguments");
-                    if (!Skills.exists(name, new Prefs(mContext))) {
+                    if (!Skills.exists(name, new Prefs(mContext), true)) {
                         return error(id, -32602, "Unknown tool: " + name);
                     }
                     Skills.Result r = Skills.run(mContext, name,
-                            args != null ? args : new JSONObject());
+                            args != null ? args : new JSONObject(), true);
                     JSONArray content = new JSONArray().put(new JSONObject()
                             .put("type", "text").put("text", r.text));
                     if (r.jpeg != null) {

@@ -1,7 +1,7 @@
 From ca53385881c106cbdc48cc103ef347788d061743 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 18:53:59 +0530
-Subject: [PATCH] mido: kgv_dns may use UDP sockets
+Subject: [PATCH 08/11] mido: kgv_dns may use UDP sockets
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---

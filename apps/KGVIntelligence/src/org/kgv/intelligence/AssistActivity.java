@@ -19,8 +19,14 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** The chat sheet: transparent and blurred over the current app, opened by holding Home. */
+/**
+ * The chat sheet: a floating card over the current app, blurred behind, with the Siri-like
+ * glow around the screen edges. Opened by holding Home.
+ */
 public class AssistActivity extends Activity implements Conversation.Listener {
+    private SiriGlow mGlow;
+    private KgvOrb mOrb;
+    private boolean mListening;
     private LinearLayout mMessages;
     private ScrollView mScroll;
     private EditText mInput;
@@ -33,6 +39,14 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
         setContentView(R.layout.activity_assist);
+        // The glow goes on the decor view, under the content, so it reaches the screen
+        // edges behind the status and navigation bars.
+        mGlow = new SiriGlow(this);
+        ((ViewGroup) getWindow().getDecorView()).addView(mGlow, 0, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mOrb = new KgvOrb(this);
+        ((ViewGroup) findViewById(R.id.orb)).addView(mOrb);
+        mOrb.setOnClickListener(v -> mVoice.toggle());
         mMessages = findViewById(R.id.messages);
         mScroll = findViewById(R.id.scroll);
         mInput = findViewById(R.id.input);
@@ -46,6 +60,8 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         mVoice = new Voice(this, new Voice.Listener() {
             @Override
             public void onListening(boolean listening) {
+                mListening = listening;
+                updateGlow();
                 mMic.setColorFilter(listening ? getColor(R.color.kgv_red) : 0xFFFFFFFF);
                 mInput.setHint(listening ? getString(R.string.listening)
                         : getString(R.string.hint));
@@ -60,6 +76,12 @@ public class AssistActivity extends Activity implements Conversation.Listener {
             @Override
             public void onError(String message) {
                 Toast.makeText(AssistActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onLevel(float rmsDb) {
+                mGlow.setVoiceLevel(rmsDb);
+                mOrb.setVoiceLevel(rmsDb);
             }
         });
         mMic.setColorFilter(0xFFFFFFFF);
@@ -137,9 +159,16 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         }
         boolean busy = Conversation.get().isBusy();
         if (busy) mMessages.addView(bubble(Conversation.STEP, "Thinking…"));
+        updateGlow();
         mSend.setEnabled(!busy);
         mSend.setAlpha(busy ? 0.4f : 1f);
         mScroll.post(() -> mScroll.fullScroll(View.FOCUS_DOWN));
+    }
+
+    private void updateGlow() {
+        boolean active = mListening || Conversation.get().isBusy();
+        mGlow.setActive(active);
+        mOrb.setActive(active);
     }
 
     private View bubble(int kind, String text) {

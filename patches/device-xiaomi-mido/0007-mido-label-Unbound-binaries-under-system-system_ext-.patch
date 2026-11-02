@@ -1,7 +1,8 @@
 From b8ff6422ef9055e22431a0e3bd8ede0c77472c51 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 16:06:42 +0530
-Subject: [PATCH 7/7] mido: label Unbound binaries under /system/system_ext too
+Subject: [PATCH 07/11] mido: label Unbound binaries under /system/system_ext
+ too
 
 On mido system_ext is a directory of system, so init saw system_file and
 refused to start the services.

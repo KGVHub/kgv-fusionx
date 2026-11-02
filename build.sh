@@ -64,15 +64,28 @@ cd "$SRC"
 # markers, and new projects get them). This is a large part of the RAM savings.
 [ "${NO_PRUNE:-}" = 1 ] || SRC=$SRC "$HERE/prune-tree.sh" >/dev/null
 
+# The tree may also hold the SODP projects for the g8142 build
+# (.repo/local_manifests/sodp_maple.xml); some define modules that clash with
+# mido's (audioadsprpcd). Show them to g8142 builds only (markers, no deletes).
+sodp=.repo/local_manifests/sodp_maple.xml
+if [ -f "$sodp" ]; then
+  for p in $(sed -n 's/.*path="\([^"]*\)".*/\1/p' "$sodp"); do
+    [ -d "$p" ] || continue
+    if [ "$DEVICE" = g8142 ]; then rm -f "$p/.find-ignore"; else touch "$p/.find-ignore"; fi
+  done
+fi
+
 echo 500 > /proc/self/oom_score_adj
 export LC_ALL=C
 # Pruned trees (prune-tree.sh) leave dangling references from modules we
 # never build; tolerate them. Anything actually built still needs its deps.
 export ALLOW_MISSING_DEPENDENCIES=true
-# JVM heaps: small enough for 8 GB, big enough not to thrash
-export _JAVA_OPTIONS="-Xmx1536m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+# JVM heaps: small enough for 8 GB, big enough not to thrash. SystemUI's kapt
+# (turbine) runs out at 1536m; hosts with more RAM set JAVA_HEAP=3g.
+JAVA_HEAP=${JAVA_HEAP:-1536m}
+export _JAVA_OPTIONS="-Xmx$JAVA_HEAP -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
 export JAVA_TOOL_OPTIONS="$_JAVA_OPTIONS"
-export ANDROID_JACK_VM_ARGS="-Xmx1536m"
+export ANDROID_JACK_VM_ARGS="-Xmx$JAVA_HEAP"
 # Metalava/doclava: do not regenerate or check public API stubs
 export WITHOUT_CHECK_API=true
 export DISABLE_STUB_VALIDATION=true
@@ -124,5 +137,5 @@ case "$STAGE" in
     rm -rf "out/target/product/$DEVICE"/obj/ETC/*build.prop_intermediates \
            "out/target/product/$DEVICE"/obj/PACKAGING/*build_prop_intermediates 2>/dev/null || true
     m -j"$JOBS" bacon ;;                 # flashable zip
-  *)     m -j"$JOBS" "$STAGE" ;;          # single module/target
+  *)     m -j"$JOBS" $STAGE ;;            # modules/targets, space separated
 esac

@@ -27,7 +27,6 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -53,6 +52,8 @@ public class AgentService extends AccessibilityService {
     private final Handler mMain = new Handler(Looper.getMainLooper());
     private final List<AccessibilityNodeInfo> mNodes = new ArrayList<>();
     private View mStatus;
+    private SiriGlow mGlow;
+    private KgvOrb mOrb;
     private TextView mStatusText;
 
     static AgentService get() {
@@ -240,6 +241,23 @@ public class AgentService extends AccessibilityService {
 
     /** The screen as a JPEG, scaled down so a small vision model can read it quickly. */
     byte[] screenshot(int maxWidth) throws InterruptedException {
+        // Keep the glow out of what the model sees.
+        setGlowVisible(false);
+        Thread.sleep(80);
+        try {
+            return takeShot(maxWidth);
+        } finally {
+            setGlowVisible(true);
+        }
+    }
+
+    private void setGlowVisible(boolean visible) {
+        mMain.post(() -> {
+            if (mGlow != null) mGlow.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        });
+    }
+
+    private byte[] takeShot(int maxWidth) throws InterruptedException {
         CountDownLatch done = new CountDownLatch(1);
         Bitmap[] shot = new Bitmap[1];
         takeScreenshot(Display.DEFAULT_DISPLAY, getMainExecutor(), new TakeScreenshotCallback() {
@@ -418,6 +436,8 @@ public class AgentService extends AccessibilityService {
     void showStatus(String text, boolean working) {
         mMain.post(() -> {
             if (mStatus == null) createStatus();
+            mGlow.setActive(working);
+            mOrb.setActive(working);
             mStatusText.setText(text);
             mStatus.setAlpha(working ? 1f : 0.92f);
             mMain.removeCallbacks(mAutoHide);
@@ -436,25 +456,42 @@ public class AgentService extends AccessibilityService {
     private final Runnable mAutoHide = () -> {
         if (mStatus != null) {
             getSystemService(WindowManager.class).removeView(mStatus);
+            getSystemService(WindowManager.class).removeView(mGlow);
             mStatus = null;
+            mGlow = null;
         }
     };
 
     private void createStatus() {
+        // The Siri-like glow around the screen while a task runs; it lets every touch
+        // through. read_screen skips overlay windows, so the model doesn't see it.
+        mGlow = new SiriGlow(this);
+        WindowManager.LayoutParams glp = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT);
+        glp.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        getSystemService(WindowManager.class).addView(mGlow, glp);
+
         LinearLayout pill = new LinearLayout(this);
         pill.setOrientation(LinearLayout.HORIZONTAL);
         pill.setGravity(Gravity.CENTER_VERTICAL);
         int pad = dp(10);
         pill.setPadding(dp(14), pad, dp(8), pad);
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xE6121014);
+        bg.setColor(getColor(R.color.sheet));  // the orb is rendered on this colour
         bg.setCornerRadius(dp(24));
         bg.setStroke(dp(1), 0xFFFF2D3A);
         pill.setBackground(bg);
 
-        ImageView icon = new ImageView(this);
-        icon.setImageResource(R.drawable.ic_kgv);
-        pill.addView(icon, new LinearLayout.LayoutParams(dp(22), dp(22)));
+        mOrb = new KgvOrb(this);
+        mOrb.setActive(true);
+        pill.addView(mOrb, new LinearLayout.LayoutParams(dp(34), dp(34)));
 
         mStatusText = new TextView(this);
         mStatusText.setTextColor(Color.WHITE);
