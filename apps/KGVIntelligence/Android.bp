@@ -10,10 +10,36 @@ android_app {
     certificate: "platform",
     privileged: true,
     system_ext_specific: true,
-    required: ["privapp-permissions-org.kgv.intelligence"],
+    required: [
+        "kgv_rootd",
+        "privapp-permissions-org.kgv.intelligence",
+    ],
     optimize: {
         enabled: false,
     },
+}
+
+// Test build for phones without KGV FusionX: an ordinary, debuggable app (no system
+// uid, test key), for trying the assistant and its phone control on stock ROMs. Not
+// part of the ROM. Build with `m KGVIntelligenceTest`.
+android_app {
+    name: "KGVIntelligenceTest",
+    defaults: ["SettingsLibDefaults"],
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+    manifest: ":KGVIntelligenceTest-manifest",
+    platform_apis: true,
+    optimize: {
+        enabled: false,
+    },
+}
+
+genrule {
+    name: "KGVIntelligenceTest-manifest",
+    srcs: ["AndroidManifest.xml"],
+    out: ["TestAndroidManifest.xml"],
+    cmd: "sed -e 's/ android:sharedUserId=\"android.uid.system\"//' " +
+        "-e 's/<application/<application android:debuggable=\"true\"/' $(in) > $(out)",
 }
 
 prebuilt_etc {
@@ -24,4 +50,20 @@ prebuilt_etc {
     // system_server stops the boot over WRITE_SECURE_SETTINGS.
     filename: "privapp-permissions-org.kgv.intelligence.xml",
     src: "etc/privapp-permissions-org.kgv.intelligence.xml",
+}
+
+// Runs the assistant's root commands (rootd/kgv_rootd.cpp).
+cc_binary {
+    name: "kgv_rootd",
+    system_ext_specific: true,
+    srcs: ["rootd/kgv_rootd.cpp"],
+    init_rc: ["rootd/kgv_rootd.rc"],
+    shared_libs: [
+        "libcutils",
+        "liblog",
+    ],
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
 }

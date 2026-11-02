@@ -102,6 +102,13 @@ final class Skills {
                     params("command", "string", "the command line",
                             "timeout", "integer", "seconds, default 20"), "command");
 
+            other("run_root", "Run a shell command as root (uid 0, unrestricted). For what "
+                    + "run_shell can't do: any app's data and databases, /data, /sys and /proc "
+                    + "tunables, killing or tracing any process, mount, iptables, changing "
+                    + "system files. Use run_shell when it is enough.",
+                    params("command", "string", "the command line",
+                            "timeout", "integer", "seconds, default 20"), "command");
+
             // ---- research ----
             other("web_search", "Search the web (DuckDuckGo). Returns titles, URLs and "
                     + "snippets.", params("query", "string", "",
@@ -149,8 +156,13 @@ final class Skills {
     private Skills() {
     }
 
-    private static boolean enabled(Def d, Prefs prefs) {
-        return !"run_shell".equals(d.name) || prefs.shellAllowed();
+    private static boolean enabled(Def d, Prefs prefs, boolean mcp) {
+        switch (d.name) {
+            case "run_shell": return prefs.shellAllowed();
+            case "run_root": return prefs.rootAllowed() && Root.available()
+                    && (!mcp || prefs.mcpRoot());
+            default: return true;
+        }
     }
 
     /** The skills in OpenAI tool format. Phone skills only when automations are on. */
@@ -158,7 +170,7 @@ final class Skills {
         JSONArray t = new JSONArray();
         try {
             for (Def d : DEFS) {
-                if (!enabled(d, prefs) || (d.phone && !canAct)) continue;
+                if (!enabled(d, prefs, false) || (d.phone && !canAct)) continue;
                 t.put(new JSONObject().put("type", "function").put("function", new JSONObject()
                         .put("name", d.name).put("description", d.description)
                         .put("parameters", d.params)));
@@ -174,7 +186,7 @@ final class Skills {
         JSONArray t = new JSONArray();
         try {
             for (Def d : DEFS) {
-                if (!enabled(d, prefs)) continue;
+                if (!enabled(d, prefs, true)) continue;
                 t.put(new JSONObject().put("name", d.name).put("description", d.description)
                         .put("inputSchema", d.params));
             }
@@ -184,8 +196,8 @@ final class Skills {
         return t;
     }
 
-    static boolean exists(String name, Prefs prefs) {
-        for (Def d : DEFS) if (d.name.equals(name)) return enabled(d, prefs);
+    static boolean exists(String name, Prefs prefs, boolean mcp) {
+        for (Def d : DEFS) if (d.name.equals(name)) return enabled(d, prefs, mcp);
         return false;
     }
 
@@ -215,6 +227,7 @@ final class Skills {
             case "post_to_x": return "Writing the X post";
             case "wait": return "Waiting";
             case "run_shell": return "Running " + clip(a.optString("command"), 48);
+            case "run_root": return "Running as root: " + clip(a.optString("command"), 40);
             case "web_search": return "Searching the web: " + clip(a.optString("query"), 40);
             case "read_webpage": return "Reading " + clip(a.optString("url"), 48);
             case "pubmed_search": return "Searching PubMed: " + clip(a.optString("query"), 40);
@@ -232,9 +245,11 @@ final class Skills {
         }
     }
 
-    static Result run(Context context, String name, JSONObject a) throws InterruptedException {
+    /** Runs a skill for the assistant (mcp false) or an MCP client (mcp true). */
+    static Result run(Context context, String name, JSONObject a, boolean mcp)
+            throws InterruptedException {
         Prefs prefs = new Prefs(context);
-        if (!exists(name, prefs)) return new Result("Unknown or disabled skill " + name);
+        if (!exists(name, prefs, mcp)) return new Result("Unknown or disabled skill " + name);
         try {
             Result r = research(context, name, a);
             if (r != null) return r;
@@ -245,6 +260,9 @@ final class Skills {
                 case "run_shell":
                     return new Result(Shell.run(a.optString("command"),
                             Math.min(120, a.optInt("timeout", 20))));
+                case "run_root":
+                    return new Result(Root.run(context, a.optString("command"),
+                            Math.min(600, a.optInt("timeout", 20)), mcp ? "MCP" : "assistant"));
             }
             AgentService s = AgentService.get();
             if ("take_screenshot".equals(name)) {

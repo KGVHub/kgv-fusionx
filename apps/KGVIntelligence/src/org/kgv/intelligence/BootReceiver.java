@@ -14,9 +14,10 @@ public class BootReceiver extends BroadcastReceiver {
         if (new Prefs(context).automationWanted() && !Prefs.isAutomationEnabled(context)) {
             Prefs.setAutomationEnabled(context, true);
         }
+        McpService.sync(context);
+        if (!Prefs.onKgvRom()) return;
         Prefs.applyDoubleTapDefault(context);
         if (!"off".equals(Prefs.dnsMode())) Prefs.setDnsMode(context, Prefs.dnsMode());
-        McpService.sync(context);
         rejoinSavedWifi(context);
     }
 

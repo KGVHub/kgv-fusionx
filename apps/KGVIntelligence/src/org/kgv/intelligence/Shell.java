@@ -48,6 +48,11 @@ final class Shell {
         }
     }
 
+    /** Single-quotes a string for sh. */
+    static String quote(String s) {
+        return "'" + s.replace("'", "'\\''") + "'";
+    }
+
     /** A screenshot through screencap, for when the automation service is off. */
     static byte[] screencap(int maxWidth) {
         Process p = null;

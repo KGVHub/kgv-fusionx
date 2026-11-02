@@ -2,7 +2,8 @@
 <resources>
     <color name="kgv_red">#FFFF2D3A</color>
     <color name="kgv_red_dim">#66FF2D3A</color>
-    <color name="sheet">#B0121014</color>
+    <!-- Opaque: the orb animation (res/raw/kgv_orb.webp) is rendered on this colour. -->
+    <color name="sheet">#FF121014</color>
     <color name="bubble_user">#E6FF2D3A</color>
     <color name="bubble_ai">#CC26232A</color>
     <color name="bubble_step">#66000000</color>

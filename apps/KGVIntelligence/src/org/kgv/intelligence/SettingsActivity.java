@@ -120,10 +120,13 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
         mMainAi = feature(screen, R.string.section_ai, R.drawable.ic_settings_ai, SECTION_AI,
                 mPrefs.aiEnabled(), on -> mPrefs.setBool("ai", on));
         mMainAi.setSummary(R.string.section_ai_summary);
-        mMainDns = feature(screen, R.string.section_dns, R.drawable.ic_settings_dns, SECTION_DNS,
-                Prefs.dnsOn(), this::setDns);
-        mMainAdblock = feature(screen, R.string.section_adblock, R.drawable.ic_settings_adblock,
-                SECTION_ADBLOCK, Prefs.adblock(), this::setAdblock);
+        if (Prefs.onKgvRom()) {  // Unbound ships with KGV FusionX only
+            mMainDns = feature(screen, R.string.section_dns, R.drawable.ic_settings_dns,
+                    SECTION_DNS, Prefs.dnsOn(), this::setDns);
+            mMainAdblock = feature(screen, R.string.section_adblock,
+                    R.drawable.ic_settings_adblock, SECTION_ADBLOCK, Prefs.adblock(),
+                    this::setAdblock);
+        }
         mMainMcp = feature(screen, R.string.section_mcp, R.drawable.ic_settings_mcp, SECTION_MCP,
                 mPrefs.mcpEnabled(), on -> {
                     mPrefs.setBool("mcp", on);
@@ -267,6 +270,10 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
                     mPrefs.setBool("mcp_lan", on);
                     syncMcp();
                 }));
+        if (Root.builtIn() || Root.available()) {
+            col.addView(toggle(R.string.settings_mcp_root, R.string.settings_mcp_root_summary,
+                    mPrefs.mcpRoot(), (b, on) -> mPrefs.setBool("mcp_root", on)));
+        }
         mPort = field(InputType.TYPE_CLASS_NUMBER);
         mPort.setText(String.valueOf(mPrefs.mcpPort()));
         col.addView(mPort);
@@ -403,9 +410,38 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
         col.addView(mAutomation);
         col.addView(toggle(R.string.settings_shell, R.string.settings_shell_summary,
                 mPrefs.shellAllowed(), (b, on) -> mPrefs.setBool("shell", on)));
-        mDoubleTap = toggle(R.string.settings_double_tap, R.string.settings_double_tap_summary,
-                false, (b, on) -> Prefs.setDoubleTapToWake(this, on));
-        col.addView(mDoubleTap);
+        col.addView(label(getString(R.string.settings_max_steps)));
+        EditText steps = field(InputType.TYPE_CLASS_NUMBER);
+        steps.setText(String.valueOf(mPrefs.maxSteps()));
+        steps.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                try {
+                    mPrefs.setMaxSteps(Integer.parseInt(s.toString().trim()));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        });
+        col.addView(steps);
+        if (Root.builtIn() || Root.available()) {
+            col.addView(toggle(R.string.settings_root, R.string.settings_root_summary,
+                    mPrefs.rootAllowed(), (b, on) -> mPrefs.setRootAllowed(on)));
+            col.addView(button(R.string.settings_root_log, v -> showRootLog()));
+        }
+        if (Prefs.onKgvRom()) {  // needs the FusionX kernel's double tap gesture
+            mDoubleTap = toggle(R.string.settings_double_tap,
+                    R.string.settings_double_tap_summary, false,
+                    (b, on) -> Prefs.setDoubleTapToWake(this, on));
+            col.addView(mDoubleTap);
+        }
         col.addView(button(R.string.settings_assistant, v -> startActivity(
                 new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))));
 
@@ -415,6 +451,22 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
             Conversation.get().clear();
             toast(getString(R.string.settings_cleared));
         }));
+    }
+
+    /** The root commands the assistant and MCP clients ran, newest first. */
+    private void showRootLog() {
+        String[] lines = Root.read(this).trim().split("\n");
+        StringBuilder text = new StringBuilder();
+        for (int i = lines.length - 1; i >= 0; i--) {
+            if (!lines[i].isEmpty()) text.append(lines[i]).append("\n\n");
+        }
+        TextView view = label(text.length() > 0 ? text.toString().trim()
+                : getString(R.string.settings_root_log_empty));
+        view.setTextIsSelectable(true);
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(view);
+        new AlertDialog.Builder(this).setTitle(R.string.settings_root_log).setView(scroll)
+                .setPositiveButton(android.R.string.ok, null).show();
     }
 
     @Override

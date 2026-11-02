@@ -4,6 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Process;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.text.TextUtils;
 
@@ -17,6 +19,27 @@ final class Prefs {
     static final String[] PROVIDERS = {LOCAL, OPENROUTER, CUSTOM};
 
     static final int MCP_DEFAULT_PORT = 8765;
+
+    /**
+     * True on KGV FusionX, where this app runs as the system user. False for the test
+     * build installed as an ordinary app on another ROM, where the ROM features (DNS,
+     * AdBlock, double tap to wake, root) don't exist.
+     */
+    static boolean onKgvRom() {
+        return Process.myUid() == Process.SYSTEM_UID;
+    }
+
+    private static String prop(String key, String def) {
+        try {
+            return SystemProperties.get(key, def);
+        } catch (Throwable t) {  // hidden API, may be blocked for ordinary apps
+            return def;
+        }
+    }
+
+    private static void setProp(String key, String value) {
+        if (onKgvRom()) SystemProperties.set(key, value);
+    }
 
     private final SharedPreferences mPrefs;
 
@@ -143,6 +166,34 @@ final class Prefs {
 
     boolean shellAllowed() {
         return mPrefs.getBoolean("shell", true);
+    }
+
+    static final int MIN_STEPS = 10;
+    static final int MAX_STEPS = 1000;
+
+    /** How many steps (model calls) one task may take before the assistant stops. */
+    int maxSteps() {
+        return Math.max(MIN_STEPS, Math.min(MAX_STEPS, mPrefs.getInt("max_steps", 200)));
+    }
+
+    void setMaxSteps(int steps) {
+        mPrefs.edit().putInt("max_steps", Math.max(MIN_STEPS, Math.min(MAX_STEPS, steps))).apply();
+    }
+
+    /** Root commands for the assistant: on KGV FusionX, kgv_rootd (persist.kgv.root). */
+    boolean rootAllowed() {
+        if (Root.builtIn()) return "1".equals(prop("persist.kgv.root", "1"));
+        return mPrefs.getBoolean("root", true);
+    }
+
+    void setRootAllowed(boolean on) {
+        if (Root.builtIn()) setProp("persist.kgv.root", on ? "1" : "0");
+        else setBool("root", on);
+    }
+
+    /** Whether MCP clients may run root commands too; off unless the user allows it. */
+    boolean mcpRoot() {
+        return mPrefs.getBoolean("mcp_root", false);
     }
 
     boolean automationWanted() {
@@ -280,22 +331,23 @@ final class Prefs {
 
     /** KGV AdBlock: Unbound answers NXDOMAIN for ad and tracker domains. */
     static boolean adblock() {
-        return android.os.SystemProperties.getBoolean("persist.kgv.dns.adblock", false);
+        String v = prop("persist.kgv.dns.adblock", "0");
+        return "1".equals(v) || "true".equals(v);
     }
 
     /** AdBlock works inside Unbound, so turning it on turns DNS on too. */
     void setAdblock(Context context, boolean on) {
-        android.os.SystemProperties.set("persist.kgv.dns.adblock", on ? "1" : "0");
+        setProp("persist.kgv.dns.adblock", on ? "1" : "0");
         if (on) setDnsOn(context, true);
     }
 
     /** The user's DNS servers for custom mode, comma separated. */
     static String dnsServers() {
-        return android.os.SystemProperties.get("persist.kgv.dns.servers", "");
+        return prop("persist.kgv.dns.servers", "");
     }
 
     static void setDnsServers(String list) {
-        android.os.SystemProperties.set("persist.kgv.dns.servers", list);
+        setProp("persist.kgv.dns.servers", list);
     }
 
     /** "1.1.1.1 9.9.9.9" -> "1.1.1.1,9.9.9.9"; null if empty, too many or not IP addresses. */
@@ -312,13 +364,14 @@ final class Prefs {
     }
 
     static String dnsMode() {
-        String m = android.os.SystemProperties.get("persist.kgv.dns.mode", "");
+        if (!onKgvRom()) return DNS_OFF;
+        String m = prop("persist.kgv.dns.mode", "");
         return m.isEmpty() ? "recursive" : m;
     }
 
     /** active, fallback (the network blocks it, so the network's DNS is used) or off. */
     static String dnsState() {
-        return android.os.SystemProperties.get("kgv.dns.state", "starting");
+        return prop("kgv.dns.state", "starting");
     }
 
     static void setDnsMode(Context context, String mode) {
@@ -326,11 +379,11 @@ final class Prefs {
         if (!"off".equals(mode)) {
             try {
                 Settings.Global.putString(context.getContentResolver(),
-                        Settings.Global.PRIVATE_DNS_MODE, "off");
+                        "private_dns_mode", "off");
             } catch (SecurityException ignored) {
             }
         }
-        android.os.SystemProperties.set("persist.kgv.dns.mode", mode);
+        setProp("persist.kgv.dns.mode", mode);
     }
 
     static final String DOUBLE_TAP_TO_WAKE = "double_tap_to_wake";
@@ -348,7 +401,7 @@ final class Prefs {
 
     /** KGV FusionX ships with double tap to wake on, until the user turns it off. */
     static void applyDoubleTapDefault(Context context) {
-        if (Settings.Secure.getString(context.getContentResolver(), DOUBLE_TAP_TO_WAKE) == null) {
+        if (onKgvRom() && Settings.Secure.getString(context.getContentResolver(), DOUBLE_TAP_TO_WAKE) == null) {
             setDoubleTapToWake(context, true);
         }
     }

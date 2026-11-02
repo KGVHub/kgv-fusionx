@@ -1,7 +1,7 @@
 From 2233e37b39baa69a699b32f847cd2bf212b66592 Mon Sep 17 00:00:00 2001
 From: kgvarunkanth <kgvarunkanth@gmail.com>
 Date: Sun, 25 Oct 2026 20:29:20 +0530
-Subject: [PATCH] mido: persist.kgv.dns.adblock property
+Subject: [PATCH 09/11] mido: persist.kgv.dns.adblock property
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
