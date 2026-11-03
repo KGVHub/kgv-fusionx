@@ -90,6 +90,45 @@ def setup(serial, apk):
     return m.group(1) if m else ""
 
 
+def browser_checks(mcp, check):
+    """KGV Browser on real sites: read, type and submit, click, scroll, screenshot, tabs."""
+    text, _, err = mcp.tool("browser_open", url="https://en.wikipedia.org/wiki/Anemia",
+                            new_tab=True)
+    check("browser_open + snapshot", not err and "Anemia" in text and "[1 " in text,
+          text.splitlines()[0][:80] if text else "empty")
+
+    text, _, err = mcp.tool("browser_open", url="https://html.duckduckgo.com/html/")
+    field = re.search(r"\[(\d+) (?:text|search) field", text)
+    check("browser finds the search field", bool(field), text[:120].replace("\n", " "))
+    if field:
+        text, _, err = mcp.tool("browser_type", ref=int(field.group(1)),
+                                text="iron deficiency anemia adolescents", submit=True)
+        check("browser_type + submit", not err and "adolescent" in text.lower(),
+              text.splitlines()[2][:80] if len(text.splitlines()) > 2 else text[:80])
+        before = re.search(r"URL: (\S+)", text)
+        # Results: long-titled links off DuckDuckGo, or through its /l/?uddg= redirect.
+        links = re.findall(r"\[(\d+) link \"[^\"]{12,}\" → https?://"
+                           r"(?:duckduckgo\.com/l/\?uddg=|(?!(?:html\.)?duckduckgo))", text)
+        if links:
+            text, _, err = mcp.tool("browser_click", ref=int(links[0]))
+            after = re.search(r"URL: (\S+)", text)
+            check("browser_click navigates", not err and before and after
+                  and after.group(1) != before.group(1),
+                  after.group(1)[:80] if after else text[:80])
+        else:
+            check("browser_click navigates", False, "no result links found")
+
+    text, _, err = mcp.tool("browser_scroll", direction="down")
+    check("browser_scroll", not err and "scrolled" in text, re.sub(r"\s+", " ", text)[:80])
+    text, images, err = mcp.tool("browser_screenshot")
+    check("browser_screenshot", not err and len(images) == 1 and len(images[0]["data"]) > 3000,
+          "%d bytes" % (len(images[0]["data"]) if images else 0))
+    text, _, err = mcp.tool("browser_tabs")
+    check("browser_tabs", not err and "tab " in text, text.replace("\n", " | ")[:80])
+    text, _, err = mcp.tool("browser_navigate", action="back")
+    check("browser_navigate back", not err and "URL:" in text, text.splitlines()[0][:80])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apk")
@@ -97,6 +136,7 @@ def main():
     ap.add_argument("--url", help="the phone's MCP server, without adb")
     ap.add_argument("--token", help="its token (with --url)")
     ap.add_argument("--root", action="store_true", help="also check run_root")
+    ap.add_argument("--browser", action="store_true", help="also check KGV Browser")
     a = ap.parse_args()
 
     if a.url:
@@ -161,6 +201,9 @@ def main():
     if a.root:
         text, _, err = mcp.tool("run_root", command="id -u; cat /proc/1/cmdline | head -c 40")
         check("run_root", not err and "\n0\n" in "\n" + text, text.replace("\n", " ")[:80])
+
+    if a.browser:
+        browser_checks(mcp, check)
 
     print("%d/%d passed" % (sum(results), len(results)))
     sys.exit(0 if all(results) else 1)

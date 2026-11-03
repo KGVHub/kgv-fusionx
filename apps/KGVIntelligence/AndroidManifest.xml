@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- Drive KGV Browser (browser/). -->
+    <uses-permission android:name="org.kgv.browser.permission.CONTROL" />
 
     <application
         android:label="@string/app_name"
@@ -48,7 +50,7 @@
             android:label="@string/app_name"
             android:icon="@drawable/ic_kgv"
             android:theme="@style/Theme.KGV.Settings"
-            android:windowSoftInputMode="stateHidden" />
+            android:windowSoftInputMode="adjustResize|stateHidden" />
 
         <service
             android:name=".AgentService"
@@ -65,6 +67,16 @@
         <service
             android:name=".McpService"
             android:exported="false" />
+
+        <!-- KGV Browser's Take over button stops the task; only the browser may send it. -->
+        <receiver
+            android:name=".StopReceiver"
+            android:exported="true"
+            android:permission="org.kgv.browser.permission.CONTROL">
+            <intent-filter>
+                <action android:name="org.kgv.intelligence.action.STOP_AGENT" />
+            </intent-filter>
+        </receiver>
 
         <receiver android:name=".BootReceiver" android:exported="false">
             <intent-filter>

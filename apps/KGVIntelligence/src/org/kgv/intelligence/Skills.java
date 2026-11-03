@@ -109,6 +109,49 @@ final class Skills {
                     params("command", "string", "the command line",
                             "timeout", "integer", "seconds, default 20"), "command");
 
+            // ---- KGV Browser: web pages in the background, acted on by [number] ----
+            other("browser_open", "Open a web page in KGV Browser, which works in the "
+                    + "background while the user keeps using the phone. Returns the page as "
+                    + "text with interactive elements numbered like [3 link \"Sign in\"]; "
+                    + "act on them with browser_click / browser_type by number. Prefer it "
+                    + "over opening sites on screen for searching, reading, forms and "
+                    + "anything across several pages.",
+                    params("url", "string", "web address", "new_tab", "boolean",
+                            "open in a new tab instead of your current one"), "url");
+            other("browser_snapshot", "The current page again (text and numbered "
+                    + "elements); with offset, read further down a long page.",
+                    params("offset", "integer", "start at this character",
+                            "tab", "integer", "tab id (default: your current tab)"));
+            other("browser_click", "Click an element on the page by its [number].",
+                    params("ref", "integer", "element number", "tab", "integer", ""), "ref");
+            other("browser_type", "Type into a text field by its [number] (replaces its "
+                    + "text). submit=true presses Enter / submits the form.",
+                    params("ref", "integer", "element number", "text", "string", "",
+                            "submit", "boolean", "", "tab", "integer", ""), "ref", "text");
+            other("browser_select", "Choose an option in a dropdown by its [number].",
+                    params("ref", "integer", "", "value", "string", "option text or value",
+                            "tab", "integer", ""), "ref", "value");
+            other("browser_key", "Press a key in the page: Enter, Tab, Escape, Backspace, "
+                    + "arrows, PageUp, PageDown.", params("key", "string", "", "tab",
+                    "integer", ""), "key");
+            other("browser_scroll", "Scroll the page (or a scrollable [number]) to load or "
+                    + "see more.", params("direction", "string", "down (default), up, left, "
+                    + "right", "ref", "integer", "", "tab", "integer", ""));
+            other("browser_navigate", "Go back, forward or reload.",
+                    params("action", "string", "back, forward or reload", "tab", "integer",
+                            ""), "action");
+            other("browser_wait", "Wait for text to appear on the page, or for some time.",
+                    params("text", "string", "", "ms", "integer", "at most 15000",
+                            "tab", "integer", ""));
+            other("browser_screenshot", "A screenshot of the page in KGV Browser, to see "
+                    + "images, charts or layout.", params("tab", "integer", ""));
+            other("browser_tabs", "List, open, switch to or close browser tabs.",
+                    params("action", "string", "list (default), new, switch or close",
+                            "tab", "integer", "tab id", "url", "string", "for new"));
+            other("browser_show", "Show the browser tab on the screen, so the user can "
+                    + "see what you did or take over (e.g. for a password or CAPTCHA).",
+                    params("tab", "integer", ""));
+
             // ---- research ----
             other("web_search", "Search the web (DuckDuckGo). Returns titles, URLs and "
                     + "snippets.", params("query", "string", "",
@@ -161,7 +204,8 @@ final class Skills {
             case "run_shell": return prefs.shellAllowed();
             case "run_root": return prefs.rootAllowed() && Root.available()
                     && (!mcp || prefs.mcpRoot());
-            default: return true;
+            default: return !d.name.startsWith("browser_")
+                    || BrowserClient.installed(prefs.context());
         }
     }
 
@@ -228,6 +272,18 @@ final class Skills {
             case "wait": return "Waiting";
             case "run_shell": return "Running " + clip(a.optString("command"), 48);
             case "run_root": return "Running as root: " + clip(a.optString("command"), 40);
+            case "browser_open": return "Browsing " + clip(a.optString("url"), 48);
+            case "browser_snapshot": return "Reading the page";
+            case "browser_click": return "Clicking [" + a.optInt("ref") + "]";
+            case "browser_type": return "Typing \"" + clip(a.optString("text"), 40) + "\"";
+            case "browser_select": return "Choosing \"" + clip(a.optString("value"), 40) + "\"";
+            case "browser_key": return "Pressing " + a.optString("key");
+            case "browser_scroll": return "Scrolling the page";
+            case "browser_navigate": return "Going " + a.optString("action");
+            case "browser_wait": return "Waiting for the page";
+            case "browser_screenshot": return "Looking at the page";
+            case "browser_tabs": return "Browser tabs: " + a.optString("action", "list");
+            case "browser_show": return "Showing the browser";
             case "web_search": return "Searching the web: " + clip(a.optString("query"), 40);
             case "read_webpage": return "Reading " + clip(a.optString("url"), 48);
             case "pubmed_search": return "Searching PubMed: " + clip(a.optString("query"), 40);
@@ -253,6 +309,7 @@ final class Skills {
         try {
             Result r = research(context, name, a);
             if (r != null) return r;
+            if (name.startsWith("browser_")) return browser(context, name, a);
             switch (name) {
                 case "wait":
                     Thread.sleep(Math.max(0, Math.min(5000, a.optInt("ms", 1000))));
@@ -355,6 +412,19 @@ final class Skills {
             default:
                 return null;
         }
+    }
+
+    /** A KGV Browser command: browser_x -> {"cmd": "x", arguments}. */
+    private static Result browser(Context context, String name, JSONObject a) throws Exception {
+        JSONObject req = new JSONObject(a.toString());
+        String cmd = name.substring("browser_".length());
+        if (cmd.equals("navigate")) cmd = a.optString("action", "back");
+        req.put("cmd", cmd);
+        JSONObject r = BrowserClient.call(context, req);
+        String text = r.optBoolean("ok") ? r.optString("text")
+                : "Failed: " + r.optString("text");
+        String jpeg = r.optString("jpeg", "");
+        return new Result(text, jpeg.isEmpty() ? null : Base64.decode(jpeg, Base64.DEFAULT));
     }
 
     /** A window of a long text, so small models can read a page in parts. */
