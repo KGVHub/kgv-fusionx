@@ -24,6 +24,8 @@ import android.widget.Toast;
  * glow around the screen edges. Opened by holding Home.
  */
 public class AssistActivity extends Activity implements Conversation.Listener {
+    static final String EXTRA_PREFILL = "org.kgv.intelligence.extra.PREFILL";
+
     private SiriGlow mGlow;
     private KgvOrb mOrb;
     private boolean mListening;
@@ -55,7 +57,11 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         findViewById(R.id.root).setOnClickListener(v -> finish());
         findViewById(R.id.settings).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
-        mSend.setOnClickListener(v -> send());
+        // Send, or while a task runs, Stop (e.g. when the model goes the wrong way).
+        mSend.setOnClickListener(v -> {
+            if (Conversation.get().isBusy()) Agent.cancel();
+            else send();
+        });
         mMic = findViewById(R.id.mic);
         mVoice = new Voice(this, new Voice.Listener() {
             @Override
@@ -95,19 +101,24 @@ public class AssistActivity extends Activity implements Conversation.Listener {
             }
             return false;
         });
-        // Keep the sheet to the lower part of the screen, like an assistant.
-        mScroll.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int max = getResources().getDisplayMetrics().heightPixels * 11 / 20;
-            if (b - t > max) {
-                ViewGroup.LayoutParams lp = mScroll.getLayoutParams();
-                lp.height = max;
-                mScroll.setLayoutParams(lp);
-            }
-        });
+        // Fit the chat to the space the window has (less with the keyboard up).
+        findViewById(R.id.root).addOnLayoutChangeListener(
+                (v, l, t, r, b, ol, ot, or, ob) -> v.post(this::fitChat));
+        mMessages.addOnLayoutChangeListener(
+                (v, l, t, r, b, ol, ot, or, ob) -> v.post(this::fitChat));
         if (new Prefs(this).automationWanted() && !Prefs.isAutomationEnabled(this)) {
             Prefs.setAutomationEnabled(this, true);
         }
         McpService.sync(this);
+        prefill(getIntent());
+    }
+
+    /** KGV Browser's Ask KGV starts the question with the page it is about. */
+    private void prefill(Intent intent) {
+        String text = intent != null ? intent.getStringExtra(EXTRA_PREFILL) : null;
+        if (text == null) return;
+        mInput.setText(text);
+        mInput.setSelection(text.length());
     }
 
     @Override
@@ -134,6 +145,7 @@ public class AssistActivity extends Activity implements Conversation.Listener {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         onChanged();
+        prefill(intent);
     }
 
     private void send() {
@@ -160,9 +172,44 @@ public class AssistActivity extends Activity implements Conversation.Listener {
         boolean busy = Conversation.get().isBusy();
         if (busy) mMessages.addView(bubble(Conversation.STEP, "Thinking…"));
         updateGlow();
-        mSend.setEnabled(!busy);
-        mSend.setAlpha(busy ? 0.4f : 1f);
+        mSend.setImageResource(busy ? R.drawable.ic_stop : R.drawable.ic_send);
+        mSend.setContentDescription(getString(busy ? R.string.stop : R.string.send));
         mScroll.post(() -> mScroll.fullScroll(View.FOCUS_DOWN));
+    }
+
+    /**
+     * Keeps the chat to the lower part of the screen, like an assistant, and always leaves
+     * room for the input row: with the keyboard up and a long chat, the history would
+     * otherwise push it out of the card. The orb gives way to the keyboard.
+     */
+    private void fitChat() {
+        View root = findViewById(R.id.root);
+        int rootH = root.getHeight() - root.getPaddingTop() - root.getPaddingBottom();
+        if (rootH <= 0) return;
+        boolean keyboard = rootH < getResources().getDisplayMetrics().heightPixels * 3 / 4;
+        View orb = findViewById(R.id.orb);
+        int orbVisibility = keyboard ? View.GONE : View.VISIBLE;
+        if (orb.getVisibility() != orbVisibility) orb.setVisibility(orbVisibility);
+        View sheet = findViewById(R.id.sheet);
+        View header = (View) findViewById(R.id.title).getParent();
+        View inputRow = (View) mInput.getParent();
+        int unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int width = View.MeasureSpec.makeMeasureSpec(sheet.getWidth(), View.MeasureSpec.AT_MOST);
+        header.measure(width, unspecified);
+        inputRow.measure(width, unspecified);
+        // Everything in the card but the history, with the margins: the card's 10 + 10,
+        // the history's 8 and the input row's 10 dp.
+        int fixed = sheet.getPaddingTop() + sheet.getPaddingBottom() + dp(38)
+                + (keyboard ? 0 : orb.getLayoutParams().height)
+                + header.getMeasuredHeight() + inputRow.getMeasuredHeight();
+        int cap = Math.max(dp(80), Math.min(keyboard ? rootH : rootH * 11 / 20, rootH - fixed));
+        int want = mMessages.getHeight() > cap ? cap : ViewGroup.LayoutParams.WRAP_CONTENT;
+        ViewGroup.LayoutParams lp = mScroll.getLayoutParams();
+        if (lp.height != want) {
+            lp.height = want;
+            mScroll.setLayoutParams(lp);
+            mScroll.post(() -> mScroll.fullScroll(View.FOCUS_DOWN));
+        }
     }
 
     private void updateGlow() {

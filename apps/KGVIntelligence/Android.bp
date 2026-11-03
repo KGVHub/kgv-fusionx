@@ -10,7 +10,9 @@ android_app {
     certificate: "platform",
     privileged: true,
     system_ext_specific: true,
+    static_libs: ["kgv-browser-api"],
     required: [
+        "KGVBrowser",
         "kgv_rootd",
         "privapp-permissions-org.kgv.intelligence",
     ],
@@ -28,6 +30,7 @@ android_app {
     srcs: ["src/**/*.java"],
     resource_dirs: ["res"],
     manifest: ":KGVIntelligenceTest-manifest",
+    static_libs: ["kgv-browser-api"],
     platform_apis: true,
     optimize: {
         enabled: false,
@@ -66,4 +69,33 @@ cc_binary {
         "-Wall",
         "-Werror",
     ],
+}
+
+// KGV Browser (browser/): the assistant's browser, which the agent drives in the
+// background and the user can watch or take over. A separate app because Android
+// doesn't allow WebView in system-uid processes; platform-signed, so only KGV X
+// Intelligence may control it.
+android_app {
+    name: "KGVBrowser",
+    srcs: ["browser/src/**/*.java"],
+    resource_dirs: ["browser/res"],
+    asset_dirs: ["browser/assets"],
+    manifest: "browser/AndroidManifest.xml",
+    static_libs: ["kgv-browser-api"],
+    sdk_version: "current",
+    certificate: "platform",
+    system_ext_specific: true,
+    optimize: {
+        enabled: false,
+    },
+}
+
+// KGV Browser's control interface (IKgvBrowser), for both apps.
+java_library {
+    name: "kgv-browser-api",
+    srcs: ["browser/api/**/*.aidl"],
+    aidl: {
+        local_include_dirs: ["browser/api"],
+    },
+    sdk_version: "current",
 }

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KGV Browser: the agent browser of KGV X Intelligence, and a browser for the user. A
+     separate app because Android doesn't allow WebView in system-uid processes. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.kgv.browser">
+
+    <!-- Lets KGV X Intelligence (platform-signed) drive the browser. -->
+    <permission
+        android:name="org.kgv.browser.permission.CONTROL"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="org.kgv.browser.permission.CONTROL" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_browser"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="true"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".BrowserActivity"
+            android:exported="true"
+            android:theme="@style/Theme.KGV.Browser"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize|stateHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".BrowserService"
+            android:exported="true"
+            android:permission="org.kgv.browser.permission.CONTROL" />
+    </application>
+</manifest>

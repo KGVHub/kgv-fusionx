@@ -42,6 +42,7 @@ final class Agent {
         sCancelled = true;
         Thread t = sRunning;
         if (t != null) t.interrupt();
+        LlmClient.abort();   // a thread waiting on the model's reply ignores interrupts
     }
 
     static void clearHistory() {
@@ -91,6 +92,10 @@ final class Agent {
                 runStart = sHistory.length() - 1;
             }
             int maxSteps = prefs.maxSteps();
+            // Web pages can carry instructions aimed at the agent: once this task has read
+            // the web, root needs the user's own request to mention it.
+            boolean readWeb = false;
+            boolean rootAsked = request.toLowerCase(java.util.Locale.ROOT).contains("root");
             for (int step = 0; step < maxSteps && !sCancelled; step++) {
                 AgentService service = AgentService.get();
                 JSONArray messages = new JSONArray();
@@ -133,7 +138,18 @@ final class Agent {
                     conv.add(Conversation.STEP, label);
                     service = AgentService.get();
                     if (service != null && acting) service.showStatus(label, true);
-                    Skills.Result result = Skills.run(context, name, args, false);
+                    Skills.Result result;
+                    if ("run_root".equals(name) && readWeb && !rootAsked) {
+                        result = new Skills.Result("Not run: root commands are blocked after "
+                                + "reading web content in a task, unless the user's request "
+                                + "asks for root. Ask the user if it is really needed.");
+                    } else {
+                        result = Skills.run(context, name, args, false);
+                    }
+                    if (name.startsWith("browser_") || name.equals("read_webpage")
+                            || name.equals("web_search")) {
+                        readWeb = true;
+                    }
                     String text = result.text;
                     if (result.jpeg != null) {
                         if (prefs.vision()) {
@@ -175,6 +191,10 @@ final class Agent {
         } catch (InterruptedException e) {
             conv.add(Conversation.ERROR, "Stopped.");
         } catch (Exception e) {
+            if (sCancelled) {   // Stop closed the model's request
+                conv.add(Conversation.ERROR, "Stopped.");
+                return;
+            }
             Log.w(TAG, "request failed", e);
             conv.add(Conversation.ERROR, e.getMessage() != null ? e.getMessage() : e.toString());
         } finally {
@@ -302,6 +322,14 @@ final class Agent {
                     .append("the content or target is unclear, ask first instead of acting. ")
                     .append("Never type passwords or payment details unless the user gave ")
                     .append("them for that purpose.");
+            if (Skills.exists("browser_open", prefs, false)) {
+                p.append("\nFor the web (searching, reading, forms, sign-ups, shopping, "
+                        + "research across sites) use the browser_* tools: KGV Browser works ")
+                        .append("in the background while the user keeps using the phone. ")
+                        .append("Act on elements by their [number] from the latest page text, ")
+                        .append("and use browser_show when the user needs to see the page or ")
+                        .append("take over (passwords, CAPTCHAs, payments).");
+            }
             if (Skills.exists("run_root", prefs, false)) {
                 p.append("\nYou have root (run_root): use it when the screen tools and ")
                         .append("run_shell can't do the task, and work on your own until ")

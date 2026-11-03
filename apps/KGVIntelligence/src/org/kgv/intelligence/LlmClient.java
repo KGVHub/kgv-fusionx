@@ -39,6 +39,15 @@ final class LlmClient {
         mModel = model;
     }
 
+    /** The chat request in flight, so Stop can close it instead of waiting for the reply. */
+    private static volatile HttpURLConnection sActive;
+
+    /** Aborts the chat request in flight (the waiting chat() call throws). */
+    static void abort() {
+        HttpURLConnection c = sActive;
+        if (c != null) new Thread(c::disconnect).start();  // not on the main thread
+    }
+
     /** Returns the assistant message object (content and/or tool_calls). */
     JSONObject chat(JSONArray messages, JSONArray tools) throws IOException, JSONException {
         JSONObject body = new JSONObject();
@@ -49,6 +58,7 @@ final class LlmClient {
             body.put("tool_choice", "auto");
         }
         HttpURLConnection conn = open("/chat/completions");
+        sActive = conn;
         try {
             conn.setRequestProperty("Content-Type", "application/json");
             try (OutputStream os = conn.getOutputStream()) {
@@ -68,6 +78,7 @@ final class LlmClient {
             msg.remove("reasoning_details");
             return msg;
         } finally {
+            sActive = null;
             conn.disconnect();
         }
     }

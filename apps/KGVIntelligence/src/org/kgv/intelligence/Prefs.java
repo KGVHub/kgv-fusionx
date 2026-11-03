@@ -42,8 +42,10 @@ final class Prefs {
     }
 
     private final SharedPreferences mPrefs;
+    private final Context mContext;
 
     Prefs(Context context) {
+        mContext = context.getApplicationContext();
         mPrefs = context.getSharedPreferences("kgv", Context.MODE_PRIVATE);
         migrate();
     }
@@ -166,6 +168,10 @@ final class Prefs {
 
     boolean shellAllowed() {
         return mPrefs.getBoolean("shell", true);
+    }
+
+    Context context() {
+        return mContext;
     }
 
     static final int MIN_STEPS = 10;

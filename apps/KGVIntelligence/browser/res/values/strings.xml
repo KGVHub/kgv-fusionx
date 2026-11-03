@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KGV Browser</string>
+    <string name="url_hint">Search or type a web address</string>
+    <string name="agent_working">KGV X Intelligence is using this tab</string>
+    <string name="take_over">Take over</string>
+    <string name="timeline">Steps</string>
+    <string name="ask_kgv">Ask KGV</string>
+    <string name="new_tab">New tab</string>
+</resources>

@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
@@ -11,6 +12,7 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -98,6 +100,34 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
         ScrollView scroll = new ScrollView(this);
         scroll.addView(col);
         setContentView(scroll);
+        keepFieldsAboveKeyboard(scroll, col, pad);
+    }
+
+    /**
+     * These pages draw edge to edge, so the window doesn't shrink for the keyboard
+     * (adjustResize has no effect): make room for it and scroll the focused field above it.
+     */
+    private void keepFieldsAboveKeyboard(ScrollView scroll, LinearLayout col, int pad) {
+        scroll.getViewTreeObserver().addOnGlobalFocusChangeListener((old, now) -> {
+            if (!(now instanceof EditText)) {
+                col.setPadding(pad, pad, pad, pad);
+                return;
+            }
+            // After the keyboard has come up.
+            scroll.postDelayed(() -> {
+                WindowInsets insets = scroll.getRootWindowInsets();
+                int ime = insets == null ? 0
+                        : insets.getInsets(WindowInsets.Type.ime()).bottom;
+                if (ime == 0) ime = getWindow().getDecorView().getHeight() * 2 / 5;
+                col.setPadding(pad, pad, pad, pad + ime);
+                // Ask every scrolling parent (SettingsLib's page and ours) to show the
+                // field with the keyboard's height below it.
+                int extra = ime;
+                now.post(() -> now.requestRectangleOnScreen(
+                        new Rect(0, 0, now.getWidth(), now.getHeight() + extra + dp(24)),
+                        false));
+            }, 350);
+        });
     }
 
     static final String EXTRA_SECTION = "section";
@@ -429,6 +459,10 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
                 } catch (NumberFormatException ignored) {
                 }
             }
+        });
+        // Show the value in use (10-1000) once the user leaves the field.
+        steps.setOnFocusChangeListener((v, focused) -> {
+            if (!focused) steps.setText(String.valueOf(mPrefs.maxSteps()));
         });
         col.addView(steps);
         if (Root.builtIn() || Root.available()) {
