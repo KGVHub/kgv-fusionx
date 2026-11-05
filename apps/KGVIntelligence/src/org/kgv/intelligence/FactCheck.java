@@ -96,6 +96,33 @@ final class FactCheck {
         return s.toString();
     }
 
+    /**
+     * What the flagged papers do report (their results), so the model can correct the
+     * figures without looking them up again.
+     */
+    static String evidenceFor(Context c, List<Issue> issues) {
+        JSONArray lib = Research.library(c);
+        Set<Integer> refs = new LinkedHashSet<>();
+        for (Issue i : issues) refs.addAll(i.refs);
+        StringBuilder s = new StringBuilder();
+        int shown = 0;
+        for (int n : refs) {
+            JSONObject r = n >= 1 && n <= lib.length() ? lib.optJSONObject(n - 1) : null;
+            if (r == null || shown >= 4) continue;
+            String e = evidence(c, r);
+            int at = e.indexOf("RESULTS:");
+            if (at < 0) at = e.indexOf("FINDINGS:");
+            String part = at >= 0 ? e.substring(at) : e;
+            int stop = part.indexOf("CONCLUSION");
+            if (stop > 0) part = part.substring(0, stop);
+            s.append("[").append(n).append("] ").append(Research.vancouver(r), 0,
+                    Math.min(90, Research.vancouver(r).length())).append("…\n")
+                    .append(Skills.clip(part.replaceAll("\\s+", " ").trim(), 900)).append("\n\n");
+            shown++;
+        }
+        return s.toString();
+    }
+
     // ---- text ----
 
     /**

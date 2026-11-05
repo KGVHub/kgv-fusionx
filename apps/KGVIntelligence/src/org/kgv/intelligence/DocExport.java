@@ -89,7 +89,11 @@ final class DocExport {
         if (content == null || content.trim().isEmpty()) {
             return "Nothing to export: give content, or note (a note saved with save_note).";
         }
+        // The app adds the References; drop one the model wrote into the text.
+        content = content.replaceFirst("(?is)\\n#{1,4}\\s*references\\s*\\n.*$", "\n");
         String which = a.optString("references", "").trim();
+        // A text that cites [n] lists what it cites, even when asked for "all".
+        if ("all".equalsIgnoreCase(which) && !citedVancouver(content)[1].isEmpty()) which = "cited";
         if (!apa && which.matches("\\d+(\\s*[,;\\s]\\s*\\d+)*")) {
             // A list of library numbers. If the text cites those library numbers ([16],
             // [31]) rather than 1, 2, 3 in list order, treat it like "cited"; otherwise
@@ -112,9 +116,12 @@ final class DocExport {
                 return "Not saved: these figures aren't in what the cited papers report "
                         + "(their abstracts and open-access full texts):\n"
                         + FactCheck.report(issues)
-                        + "Check each against pubmed_abstracts / read_fulltext and correct "
-                        + "the note with edit_note: use the paper's own figure, or fix the "
-                        + "citation. A figure you calculated from the paper's numbers (a sum, "
+                        + "\nWhat those papers report:\n" + FactCheck.evidenceFor(c, issues)
+                        + "Correct the note with edit_note: use the paper's own figure, cite "
+                        + "the paper the figure really comes from, or delete the figure (or "
+                        + "the sentence) if no paper you have reports it. Keep everything "
+                        + "else: never shorten or rewrite the review to get past this check. "
+                        + "A figure you calculated from the paper's numbers (a sum, "
                         + "a difference) is allowed if the text says so, e.g. \"11,386 (6,131 "
                         + "+ 5,255)\". Then export again. Only for figures you verified in a "
                         + "full text, export with accept_unverified=true: the document will "
@@ -124,7 +131,7 @@ final class DocExport {
         List<FactCheck.Issue> unverified = apa ? new ArrayList<>() : FactCheck.check(c, content);
         // "library" usually means "from the library": list only what the text cites.
         if (which.isEmpty() || "cited".equalsIgnoreCase(which)
-                || "library".equalsIgnoreCase(which)) {
+                || "library".equalsIgnoreCase(which) || ("all".equalsIgnoreCase(which) && apa)) {
             if (apa) {
                 which = citedApa(c, content);
             } else {

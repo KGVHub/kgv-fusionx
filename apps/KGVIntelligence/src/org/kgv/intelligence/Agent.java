@@ -161,7 +161,9 @@ final class Agent {
                 }
                 JSONArray calls = reply.optJSONArray("tool_calls");
                 if (calls == null || calls.length() == 0) {
-                    String text = reply.optString("content", "").trim();
+                    String text = reply.isNull("content") ? ""
+                            : reply.optString("content", "").trim();
+                    if (text.equals("null")) text = "";
                     if (text.isEmpty()) text = "Done.";
                     conv.add(Conversation.ASSISTANT, text);
                     if (acting && service != null) service.showStatus(shorten(text), false);

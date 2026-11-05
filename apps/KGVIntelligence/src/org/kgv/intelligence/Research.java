@@ -376,9 +376,21 @@ final class Research {
     }
 
     /** Writes a Markdown note (summary, review table, extraction sheet) to Documents. */
-    static String saveNote(Context c, String title, String content, boolean append)
-            throws IOException {
+    static String saveNote(Context c, String title, String content, boolean append,
+            boolean replace) throws IOException {
         String name = noteName(title);
+        if (!append) {
+            String old = readNote(title);
+            if (old != null && !old.trim().isEmpty()) {
+                if (content.length() < old.length() / 2 && !replace) {
+                    return "Not saved: this would replace the " + old.length() + "-character "
+                            + "note \"" + name + "\" with " + content.length() + " characters. "
+                            + "To change part of it use edit_note, to add use append=true; to "
+                            + "really replace it, save again with replace=true.";
+                }
+                writeDocument(c, name + " (previous).md", old);   // one step of undo
+            }
+        }
         String before = append ? readNote(title) : null;
         if (before != null && !before.isEmpty()) content = before.replaceAll("\\s+$", "")
                 + "\n\n" + content;
