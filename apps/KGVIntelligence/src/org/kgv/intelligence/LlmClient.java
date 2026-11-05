@@ -49,8 +49,26 @@ final class LlmClient {
     }
 
     /** Returns the assistant message object (content and/or tool_calls). */
+    /** Room for long answers and tool calls; some providers refuse it (then: their default). */
+    private static final int MAX_TOKENS = 8192;
+    private static volatile boolean sNoMaxTokens;
+
     JSONObject chat(JSONArray messages, JSONArray tools) throws IOException, JSONException {
+        if (sNoMaxTokens) return chat(messages, tools, false);
+        try {
+            return chat(messages, tools, true);
+        } catch (IOException e) {
+            String m = String.valueOf(e.getMessage());
+            if (!m.startsWith("HTTP 400") && !m.contains("max_tokens")) throw e;
+            sNoMaxTokens = true;   // remember for this session
+            return chat(messages, tools, false);
+        }
+    }
+
+    private JSONObject chat(JSONArray messages, JSONArray tools, boolean maxTokens)
+            throws IOException, JSONException {
         JSONObject body = new JSONObject();
+        if (maxTokens) body.put("max_tokens", MAX_TOKENS);
         body.put("model", mModel);
         body.put("messages", messages);
         if (tools != null && tools.length() > 0) {

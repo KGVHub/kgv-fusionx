@@ -304,8 +304,11 @@ final class Skills {
                     + Research.FOLDER + " as Vancouver Markdown, BibTeX (Zotero, Mendeley) "
                     + "or RIS.", params("format", "string", "vancouver, bibtex or ris"));
             other("save_note", "Save a Markdown note to Documents/" + Research.FOLDER
-                    + ": a summary, literature review, evidence table or data extraction.",
-                    params("title", "string", "", "content", "string", "Markdown"),
+                    + ": a summary, literature review, evidence table or data extraction. "
+                    + "For a long document, save it in sections: the first with append "
+                    + "false, the rest with append true.",
+                    params("title", "string", "", "content", "string", "Markdown",
+                            "append", "boolean", "add to the end of the note of this title"),
                     "title", "content");
         } catch (JSONException e) {
             throw new IllegalStateException(e);
@@ -451,6 +454,19 @@ final class Skills {
         Prefs prefs = new Prefs(context);
         if (!exists(name, prefs, mcp)) return new Result("Unknown or disabled skill " + name);
         Def def = def(name);
+        JSONArray required = def.params.optJSONArray("required");
+        if (required != null) {
+            StringBuilder missing = new StringBuilder();
+            for (int i = 0; i < required.length(); i++) {
+                String k = required.optString(i);
+                if (!a.has(k) || a.isNull(k) || a.optString(k).trim().isEmpty()) {
+                    missing.append(missing.length() == 0 ? "" : ", ").append(k);
+                }
+            }
+            if (missing.length() > 0) {
+                return new Result("Not run: missing " + missing + ". Nothing was done.");
+            }
+        }
         try {
             // MCP clients are other programs: they always ask, whatever the mode.
             if (def.risk != null && (mcp || prefs.askFirst())) {
@@ -562,7 +578,7 @@ final class Skills {
                 return new Result(Research.exportReferences(c, a.optString("format", "vancouver")));
             case "save_note":
                 return new Result(Research.saveNote(c, a.optString("title"),
-                        a.optString("content")));
+                        a.optString("content"), a.optBoolean("append")));
             default:
                 return null;
         }

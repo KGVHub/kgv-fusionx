@@ -58,12 +58,15 @@ final class DocExport {
                         + "Year) for APA.")
                 .params("title", "string", "document title (also the file name)",
                         "content", "string", "the body in Markdown, without the references",
+                        "note", "string", "instead of content: the title of a note saved "
+                                + "with save_note",
                         "format", "string", "docx (default) or pdf",
                         "style", "string", "vancouver (default) or apa",
-                        "references", "string", "library (default: all of it), none, or "
-                                + "library numbers in citation order, e.g. 3,1,7 (renumbered "
-                                + "1, 2, 3 in that order, so cite [1] [2] [3])")
-                .required("title", "content")
+                        "references", "string", "cited (default: the library numbers "
+                                + "cited as [n] in the text, renumbered in order of first "
+                                + "citation), all (the whole library), none, or library numbers in "
+                                + "citation order, e.g. 3,1,7 (then cite [1] [2] [3])")
+                .required("title")
                 .label(a -> "Writing \"" + Skills.clip(a.optString("title"), 40) + "\" ("
                         + ("pdf".equalsIgnoreCase(a.optString("format")) ? "PDF" : "Word")
                         + ")")
@@ -76,8 +79,29 @@ final class DocExport {
         if (title.isEmpty()) title = "Document";
         boolean pdf = "pdf".equalsIgnoreCase(a.optString("format").trim());
         boolean apa = "apa".equalsIgnoreCase(a.optString("style").trim());
+        String content = a.optString("content");
+        if (content.trim().isEmpty() && !a.optString("note").trim().isEmpty()) {
+            content = Research.readNote(a.optString("note"));
+            if (content == null) return "No note titled \"" + a.optString("note") + "\".";
+        }
+        if (content == null || content.trim().isEmpty()) {
+            return "Nothing to export: give content, or note (a note saved with save_note).";
+        }
+        String which = a.optString("references", "").trim();
+        // "library" usually means "from the library": list only what the text cites.
+        if (which.isEmpty() || "cited".equalsIgnoreCase(which)
+                || "library".equalsIgnoreCase(which)) {
+            if (apa) {
+                which = citedApa(c, content);
+            } else {
+                String[] renumbered = citedVancouver(content);
+                content = renumbered[0];
+                which = renumbered[1];
+            }
+            if (which.isEmpty()) which = "none";
+        }
         List<Block> blocks = new ArrayList<>();
-        List<Block> body = parse(a.optString("content"));
+        List<Block> body = parse(content);
         // The title, unless the content already starts with it as a heading.
         if (body.isEmpty() || body.get(0).kind != Block.HEADING
                 || !plain(body.get(0).runs).equalsIgnoreCase(title)) {
@@ -86,7 +110,7 @@ final class DocExport {
             body.get(0).kind = Block.TITLE;
         }
         blocks.addAll(body);
-        int refs = addReferences(c, blocks, a.optString("references", "library").trim(), apa);
+        int refs = addReferences(c, blocks, which, apa);
 
         String name = title.replaceAll("[\\\\/:*?\"<>|]", " ").replaceAll("\\s+", " ").trim();
         if (name.length() > 80) name = name.substring(0, 80).trim();
@@ -99,6 +123,78 @@ final class DocExport {
         }
         return "Saved " + saved.path + (refs > 0 ? " with " + refs + " references ("
                 + (apa ? "APA" : "Vancouver") + ")" : "") + ".";
+    }
+
+    private static final java.util.regex.Pattern CITE =
+            java.util.regex.Pattern.compile("\\[(\\d+(?:\\s*[-–,]\\s*\\d+)*)\\]");
+
+    /**
+     * Vancouver: the library numbers cited as [n], [n, m] or [n-m], in order of first
+     * citation; returns {text renumbered 1, 2, 3…, "3,1,7"}.
+     */
+    static String[] citedVancouver(String text) {
+        List<Integer> order = new ArrayList<>();
+        java.util.regex.Matcher m = CITE.matcher(text);
+        while (m.find()) {
+            for (int n : expand(m.group(1))) if (!order.contains(n)) order.add(n);
+        }
+        if (order.isEmpty()) return new String[]{text, ""};
+        StringBuffer out = new StringBuffer();
+        m = CITE.matcher(text);
+        while (m.find()) {
+            List<Integer> nums = new ArrayList<>();
+            for (int n : expand(m.group(1))) nums.add(order.indexOf(n) + 1);
+            Collections.sort(nums);
+            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(
+                    "[" + ranges(nums) + "]"));
+        }
+        m.appendTail(out);
+        StringBuilder list = new StringBuilder();
+        for (int n : order) list.append(list.length() == 0 ? "" : ",").append(n);
+        return new String[]{out.toString(), list.toString()};
+    }
+
+    private static List<Integer> expand(String group) {
+        List<Integer> out = new ArrayList<>();
+        for (String part : group.split("\\s*,\\s*")) {
+            String[] ab = part.split("\\s*[-–]\\s*");
+            try {
+                int from = Integer.parseInt(ab[0].trim());
+                int to = ab.length > 1 ? Integer.parseInt(ab[1].trim()) : from;
+                for (int n = from; n <= to && n - from < 50; n++) out.add(n);
+            } catch (NumberFormatException ignored) {  // not a citation
+            }
+        }
+        return out;
+    }
+
+    /** 1,2,3,5 → "1-3,5". */
+    private static String ranges(List<Integer> nums) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < nums.size(); i++) {
+            int start = nums.get(i), end = start;
+            while (i + 1 < nums.size() && nums.get(i + 1) == end + 1) end = nums.get(++i);
+            if (s.length() > 0) s.append(',');
+            s.append(start);
+            if (end > start) s.append(end == start + 1 ? "," : "-").append(end);
+        }
+        return s.toString();
+    }
+
+    /** APA: the library entries whose first author's surname and year appear in the text. */
+    private static String citedApa(Context c, String text) {
+        JSONArray lib = Research.library(c);
+        StringBuilder list = new StringBuilder();
+        for (int i = 0; i < lib.length(); i++) {
+            JSONObject r = lib.optJSONObject(i);
+            JSONArray au = r == null ? null : r.optJSONArray("authors");
+            if (au == null || au.length() == 0) continue;
+            String family = au.optString(0).split(" ")[0];
+            if (!family.isEmpty() && text.contains(family) && text.contains(r.optString("year"))) {
+                list.append(list.length() == 0 ? "" : ",").append(i + 1);
+            }
+        }
+        return list.toString();
     }
 
     /** Appends the References heading and entries; returns how many. */

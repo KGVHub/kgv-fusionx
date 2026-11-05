@@ -26,6 +26,10 @@ final class Agent {
     private static final int FULL_RESULTS = 6;
     private static final int SHORT_RESULT = 300;
     private static final int RUN_WINDOW = 120;
+    private static final java.util.Set<String> REPEAT_GUARDED = new java.util.HashSet<>(
+            java.util.Arrays.asList("web_search", "pubmed_search", "europepmc_search",
+                    "pubmed_abstracts", "read_webpage", "read_fulltext", "lookup_doi",
+                    "download_pdf"));
 
     interface Callbacks {
         /** The first phone action is about to run; the chat should get out of the way. */
@@ -118,6 +122,9 @@ final class Agent {
             return context.getString(R.string.not_configured);
         }
         List<String> steps = new ArrayList<>();
+        // Research calls already made in this task: the same search twice gives the same
+        // result, and small models can loop on it.
+        java.util.Set<String> researched = new java.util.HashSet<>();
         LlmClient llm = new LlmClient(prefs);
         boolean acting = false;
         try {
@@ -167,6 +174,14 @@ final class Agent {
                     JSONObject fn = call.getJSONObject("function");
                     String name = fn.getString("name");
                     JSONObject args = parseArgs(fn.optString("arguments", "{}"));
+                    boolean brokenArgs = args == null;
+                    if (brokenArgs) {
+                        // Cut off (the reply hit the model's length limit) or not JSON. Don't
+                        // run it with nothing, and don't send it back: providers reject the
+                        // history with "400 bad request".
+                        fn.put("arguments", "{}");
+                        args = new JSONObject();
+                    }
                     if (!acting && Skills.changesScreen(name)) {
                         acting = true;
                         if (callbacks != null) callbacks.onActing();
@@ -180,7 +195,21 @@ final class Agent {
                     service = AgentService.get();
                     if (service != null && acting) service.showStatus(label, true);
                     Skills.Result result;
-                    if ("run_root".equals(name) && readWeb && !rootAsked && !prefs.fullAccess()) {
+                    String signature = name + " " + args;
+                    boolean repeat = !brokenArgs && REPEAT_GUARDED.contains(name)
+                            && !researched.add(signature);
+                    if (repeat) {
+                        result = new Skills.Result("Not run: you already made exactly this call "
+                                + "in this task, so the result would be the same. Use what you "
+                                + "found, try a different query, or move on to the next step.");
+                    } else if (brokenArgs) {
+                        result = new Skills.Result("Not run: this call's arguments were cut "
+                                + "off or not valid JSON, most likely because they were too "
+                                + "long for one reply. Split the work up: write a long document "
+                                + "with save_note in sections (append=true), then "
+                                + "export_document with note set to the note's title.");
+                    } else if ("run_root".equals(name) && readWeb && !rootAsked
+                            && !prefs.fullAccess()) {
                         result = new Skills.Result("Not run: root commands are blocked after "
                                 + "reading web content in a task, unless the user's request "
                                 + "asks for root. Ask the user if it is really needed.");
@@ -244,11 +273,12 @@ final class Agent {
         }
     }
 
+    /** The call's arguments, or null when they aren't a JSON object (e.g. cut off). */
     private static JSONObject parseArgs(String s) {
         try {
             return new JSONObject(s.isEmpty() ? "{}" : s);
         } catch (JSONException e) {
-            return new JSONObject();
+            return null;
         }
     }
 
@@ -344,11 +374,18 @@ final class Agent {
                 .append("every claim with its PMID or DOI. Prefer systematic reviews, ")
                 .append("meta-analyses, RCTs and Indian/WHO/ICMR guidance where relevant. ")
                 .append("Never invent a reference, PMID, DOI or number; if you couldn't find ")
-                .append("it, say so. For literature reviews: search with MeSH terms and ")
+                .append("it, say so. Every figure in a review (effect sizes, RR, CI, sample ")
+                .append("sizes, study counts) must come from an abstract or full text you read ")
+                .append("in this task: put it in the save_reference note when you read it, and ")
+                .append("write the review from those notes (list_references), not from memory. ")
+                .append("For literature reviews: search with MeSH terms and ")
                 .append("filters, screen the titles, read abstracts, save the relevant ones ")
                 .append("with save_reference, then write the review with save_note (an ")
-                .append("evidence table: author/year, design, setting, sample, findings) and ")
-                .append("offer export_references for Zotero/Mendeley.\n");
+                .append("evidence table: author/year, design, setting, sample, findings), ")
+                .append("section by section with append=true when it is long, citing ")
+                .append("library numbers as [n]; export it with export_document note=<the ")
+                .append("note's title> (only the cited references are listed), and offer ")
+                .append("export_references for Zotero/Mendeley.\n");
         if (canAct) {
             p.append("You can operate the phone with the tools. For a task: open the app or ")
                     .append("page, call read_screen, act on the elements by their #id, and ")
