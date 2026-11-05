@@ -3,5 +3,22 @@
     <privapp-permissions package="org.kgv.intelligence">
         <!-- Turn its own automation (accessibility) service on at boot. -->
         <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+        <!-- Phone settings, files and apps (DeviceControl, FileTools, AppManager).
+             Every signature|privileged permission the app asks for must be here, or
+             the boot stops. -->
+        <permission name="android.permission.BATTERY_STATS" />
+        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+        <permission name="android.permission.CHANGE_APP_IDLE_STATE" />
+        <permission name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+        <permission name="android.permission.DELETE_CACHE_FILES" />
+        <permission name="android.permission.DELETE_PACKAGES" />
+        <permission name="android.permission.DUMP" />
+        <permission name="android.permission.FORCE_STOP_PACKAGES" />
+        <permission name="android.permission.INSTALL_PACKAGES" />
+        <permission name="android.permission.MODIFY_DAY_NIGHT_MODE" />
+        <permission name="android.permission.MODIFY_PHONE_STATE" />
+        <permission name="android.permission.PACKAGE_USAGE_STATS" />
+        <permission name="android.permission.POWER_SAVER" />
+        <permission name="android.permission.TETHER_PRIVILEGED" />
     </privapp-permissions>
 </permissions>

@@ -201,6 +201,10 @@
       else window.scrollBy(dx * innerWidth, dy * innerHeight);
       return 'Scrolled ' + direction;
     },
+    // "[3 button "Pay now"] on www.example.com", without acting on it.
+    describe: function (ref) {
+      return describe(el(ref), ref) + ' on ' + location.host;
+    },
     hasText: function (text) {
       return (document.body && document.body.innerText || '').toLowerCase()
           .indexOf(String(text).toLowerCase()) >= 0;

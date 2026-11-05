@@ -26,6 +26,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
 
@@ -95,6 +96,9 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
             buildAdblock(col);
         } else if (SECTION_AI.equals(section)) {
             buildAi(col);
+        } else if (SECTION_PERSONAL.equals(section)) {
+            setTitle(R.string.section_personal);
+            PersonalPage.build(this, col);
         }
 
         ScrollView scroll = new ScrollView(this);
@@ -135,6 +139,7 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
     static final String SECTION_MCP = "mcp";
     static final String SECTION_DNS = "dns";
     static final String SECTION_ADBLOCK = "adblock";
+    static final String SECTION_PERSONAL = "personal";
 
     /** The first page: the four features as stock Settings rows (tap for the page, switch at the end). */
     public static class MainFragment extends PreferenceFragmentCompat {
@@ -150,6 +155,17 @@ public class SettingsActivity extends CollapsingToolbarBaseActivity {
         mMainAi = feature(screen, R.string.section_ai, R.drawable.ic_settings_ai, SECTION_AI,
                 mPrefs.aiEnabled(), on -> mPrefs.setBool("ai", on));
         mMainAi.setSummary(R.string.section_ai_summary);
+        Preference personal = new Preference(screen.getContext());
+        personal.setKey(SECTION_PERSONAL);
+        personal.setTitle(R.string.section_personal);
+        personal.setSummary(R.string.section_personal_summary);
+        personal.setIcon(R.drawable.ic_settings_personal);
+        personal.setPersistent(false);
+        personal.setOnPreferenceClickListener(pref -> {
+            open(SECTION_PERSONAL);
+            return true;
+        });
+        screen.addPreference(personal);
         if (Prefs.onKgvRom()) {  // Unbound ships with KGV FusionX only
             mMainDns = feature(screen, R.string.section_dns, R.drawable.ic_settings_dns,
                     SECTION_DNS, Prefs.dnsOn(), this::setDns);

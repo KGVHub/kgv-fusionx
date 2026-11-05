@@ -56,6 +56,8 @@ then tap Find my PC while the phone is on the same Wi-Fi. Nothing you ask leaves
 
     <string name="section_ai">KGV X AI</string>
     <string name="section_ai_summary">AI model, voice input and phone control</string>
+    <string name="section_personal">Memory &amp; safety</string>
+    <string name="section_personal_summary">Approvals, memory, shortcuts, routines and logins</string>
     <string name="section_mcp">MCP server</string>
     <string name="section_mcp_summary">Let MCP clients use the phone\'s skills</string>
     <string name="section_dns">DNS</string>
