@@ -98,20 +98,41 @@ final class FactCheck {
 
     // ---- text ----
 
-    /** Table rows, and sentences of the other lines. */
+    /**
+     * Table rows, and sentences of the other lines. A sentence that cites nothing takes
+     * the citations of its paragraph, or else of its section heading ("### 4.1 Coverage
+     * [28]"), so figures under a cited heading are checked too.
+     */
     private static List<String> units(String text) {
         List<String> out = new ArrayList<>();
+        String headingCites = "";
         for (String line : text.split("\n")) {
             String l = line.trim();
-            if (l.isEmpty() || l.startsWith("#")) continue;
+            if (l.isEmpty()) continue;
+            if (l.startsWith("#")) {
+                headingCites = citations(l);
+                continue;
+            }
             if (l.startsWith("|")) {
                 out.add(l);
                 continue;
             }
-            // Sentence ends: ". " before a capital or a citation-less break; keep decimals.
-            for (String s : l.split("(?<=[.!?])\\s+(?=[A-Z(*\\[])")) out.add(s);
+            String paragraphCites = citations(l);
+            String inherited = paragraphCites.isEmpty() ? headingCites : paragraphCites;
+            for (String sentence : l.split("(?<=[.!?])\\s+(?=[A-Z(*\\[])")) {
+                out.add(cited(sentence).isEmpty() && !inherited.isEmpty()
+                        ? sentence + " " + inherited : sentence);
+            }
         }
         return out;
+    }
+
+    /** The [n] citations in a line, as text ("[28] [30]"). */
+    private static String citations(String line) {
+        StringBuilder s = new StringBuilder();
+        Matcher m = CITE.matcher(line);
+        while (m.find()) s.append(s.length() == 0 ? "" : " ").append(m.group());
+        return s.toString();
     }
 
     private static Set<Integer> cited(String unit) {
