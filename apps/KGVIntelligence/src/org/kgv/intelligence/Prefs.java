@@ -170,6 +170,29 @@ final class Prefs {
         return mPrefs.getBoolean("shell", true);
     }
 
+    /** Control: risky actions wait for the user's Approve. Full access: the assistant acts alone. */
+    static final String MODE_CONTROL = "control";
+    static final String MODE_FULL = "full";
+
+    String mode() {
+        return mPrefs.getString("mode",
+                mPrefs.getBoolean("ask_first", true) ? MODE_CONTROL : MODE_FULL);
+    }
+
+    void setMode(String mode) {
+        mPrefs.edit().putString("mode", MODE_FULL.equals(mode) ? MODE_FULL : MODE_CONTROL)
+                .putBoolean("ask_first", !MODE_FULL.equals(mode)).apply();
+    }
+
+    boolean fullAccess() {
+        return MODE_FULL.equals(mode());
+    }
+
+    /** Ask before risky actions (sending, calling, paying, deleting, root changes). */
+    boolean askFirst() {
+        return !fullAccess();
+    }
+
     Context context() {
         return mContext;
     }

@@ -37,11 +37,38 @@ final class Skills {
         }
     }
 
+    /** Carries out a tool. Throw for failures; the message goes back to the model. */
+    interface Handler {
+        Result run(Context context, JSONObject args, boolean mcp) throws Exception;
+    }
+
+    /** The short line shown in the chat while the tool runs. */
+    interface Label {
+        String of(JSONObject args);
+    }
+
+    /** Whether the tool is offered at all (a setting, a missing app, the MCP side). */
+    interface Gate {
+        boolean ok(Prefs prefs, boolean mcp);
+    }
+
+    /**
+     * For a risky action: what to ask the user ("Send an SMS to Amma: on my way") before
+     * it runs, or null when this call needs no approval. See Approvals.
+     */
+    interface Risk {
+        String check(Context context, JSONObject args) throws Exception;
+    }
+
     private static final class Def {
         final String name;
         final String description;
         final JSONObject params;
         final boolean phone;
+        Handler handler;
+        Label label;
+        Gate gate;
+        Risk risk;
 
         Def(String name, boolean phone, String description, JSONObject params) {
             this.name = name;
@@ -51,7 +78,96 @@ final class Skills {
         }
     }
 
+    /**
+     * Declares a tool from a feature module:
+     * <pre>
+     * Skills.tool("send_sms").desc("…").params("to", "string", "…", "text", "string", "")
+     *         .required("to", "text").label(a -> "Texting " + a.optString("to"))
+     *         .risk((c, a) -> "Send an SMS to " + a.optString("to"))
+     *         .run((c, a, mcp) -> new Skills.Result(Comms.sendSms(c, a))).add();
+     * </pre>
+     * Call it from the module's register(), which Skills' static block calls.
+     */
+    static Tool tool(String name) {
+        return new Tool(name);
+    }
+
+    static final class Tool {
+        private final String mName;
+        private boolean mPhone;
+        private String mDesc = "";
+        private String[] mSpec = {};
+        private String[] mRequired = {};
+        private Handler mHandler;
+        private Label mLabel;
+        private Gate mGate;
+        private Risk mRisk;
+
+        private Tool(String name) {
+            mName = name;
+        }
+
+        /** It acts on the screen, so it needs automation on and the chat out of the way. */
+        Tool phone() {
+            mPhone = true;
+            return this;
+        }
+
+        Tool desc(String d) {
+            mDesc = d;
+            return this;
+        }
+
+        /** name, type, description triples, as for params(). */
+        Tool params(String... spec) {
+            mSpec = spec;
+            return this;
+        }
+
+        Tool required(String... names) {
+            mRequired = names;
+            return this;
+        }
+
+        Tool label(Label l) {
+            mLabel = l;
+            return this;
+        }
+
+        Tool when(Gate g) {
+            mGate = g;
+            return this;
+        }
+
+        Tool risk(Risk r) {
+            mRisk = r;
+            return this;
+        }
+
+        Tool run(Handler h) {
+            mHandler = h;
+            return this;
+        }
+
+        void add() {
+            try {
+                Def d = Skills.add(mName, mPhone, mDesc, Skills.params(mSpec), mRequired);
+                d.handler = mHandler;
+                d.label = mLabel;
+                d.gate = mGate;
+                d.risk = mRisk;
+            } catch (JSONException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
     private static final List<Def> DEFS = new ArrayList<>();
+
+    private static Def def(String name) {
+        for (Def d : DEFS) if (d.name.equals(name)) return d;
+        return null;
+    }
 
     static {
         try {
@@ -194,12 +310,30 @@ final class Skills {
         } catch (JSONException e) {
             throw new IllegalStateException(e);
         }
+        // Risky built-in tools ask the user first (Approvals).
+        def("run_root").risk = (c, a) -> Approvals.riskyRoot(a.optString("command"));
+        def("post_to_x").risk = (c, a) -> "Post on X: \"" + clip(a.optString("text"), 120) + "\"";
+        def("browser_click").risk = (c, a) -> Approvals.riskyClick(c, a);
+        def("browser_type").risk = (c, a) -> Approvals.riskyTyping(c, a);
+        // Feature modules.
+        Memory.register();
+        Shortcuts.register();
+        Routines.register();
+        Notifications.register();
+        Comms.register();
+        DeviceControl.register();
+        FileTools.register();
+        AppManager.register();
+        Vault.register();
+        Papers.register();
+        DocExport.register();
     }
 
     private Skills() {
     }
 
     private static boolean enabled(Def d, Prefs prefs, boolean mcp) {
+        if (d.gate != null) return d.gate.ok(prefs, mcp);
         switch (d.name) {
             case "run_shell": return prefs.shellAllowed();
             case "run_root": return prefs.rootAllowed() && Root.available()
@@ -297,7 +431,17 @@ final class Skills {
             case "remove_reference": return "Removing reference " + a.optInt("number");
             case "export_references": return "Exporting references";
             case "save_note": return "Saving \"" + clip(a.optString("title"), 40) + "\"";
-            default: return name;
+            default: {
+                Def d = def(name);
+                if (d != null && d.label != null) {
+                    try {
+                        return d.label.of(a);
+                    } catch (RuntimeException e) {
+                        return name;
+                    }
+                }
+                return name;
+            }
         }
     }
 
@@ -306,7 +450,17 @@ final class Skills {
             throws InterruptedException {
         Prefs prefs = new Prefs(context);
         if (!exists(name, prefs, mcp)) return new Result("Unknown or disabled skill " + name);
+        Def def = def(name);
         try {
+            // MCP clients are other programs: they always ask, whatever the mode.
+            if (def.risk != null && (mcp || prefs.askFirst())) {
+                String what = def.risk.check(context, a);
+                if (what != null && !Approvals.ask(context, what, mcp)) {
+                    return new Result("Not done: the user declined (" + what + "). Don't try "
+                            + "it another way; tell the user, or ask what to do instead.");
+                }
+            }
+            if (def.handler != null) return def.handler.run(context, a, mcp);
             Result r = research(context, name, a);
             if (r != null) return r;
             if (name.startsWith("browser_")) return browser(context, name, a);
@@ -428,7 +582,7 @@ final class Skills {
     }
 
     /** A window of a long text, so small models can read a page in parts. */
-    private static String page(String text, JSONObject a) {
+    static String page(String text, JSONObject a) {
         int from = Math.max(0, Math.min(text.length(), a.optInt("offset", 0)));
         int to = Math.min(text.length(), from + 6000);
         String s = text.substring(from, to);
@@ -453,12 +607,15 @@ final class Skills {
         add(name, false, desc, params, required);
     }
 
-    private static void add(String name, boolean phone, String desc, JSONObject params,
+    private static Def add(String name, boolean phone, String desc, JSONObject params,
             String... required) throws JSONException {
+        if (def(name) != null) throw new IllegalStateException("two tools named " + name);
         JSONArray req = new JSONArray();
         for (String r : required) req.put(r);
         params.put("required", req);
-        DEFS.add(new Def(name, phone, desc, params));
+        Def d = new Def(name, phone, desc, params);
+        DEFS.add(d);
+        return d;
     }
 
     /** params(name, type, description, ...) */
@@ -472,7 +629,7 @@ final class Skills {
         return new JSONObject().put("type", "object").put("properties", p);
     }
 
-    private static String clip(String s, int n) {
+    static String clip(String s, int n) {
         return s.length() > n ? s.substring(0, n) + "…" : s;
     }
 }

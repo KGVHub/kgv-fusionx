@@ -63,6 +63,7 @@ public class AgentService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         sInstance = this;
+        Routines.listen(this);   // event routines need a running process; this one lasts
     }
 
     @Override

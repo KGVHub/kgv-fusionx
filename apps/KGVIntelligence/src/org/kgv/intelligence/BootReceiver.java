@@ -15,6 +15,17 @@ public class BootReceiver extends BroadcastReceiver {
             Prefs.setAutomationEnabled(context, true);
         }
         McpService.sync(context);
+        Routines.onBoot(context);
+        Shortcuts.publish(context);
+        if (Prefs.onKgvRom()) {
+            // Notifications for the assistant and notification routines (it waits briefly).
+            new Thread(() -> {
+                try {
+                    Notifications.ensureEnabled(context.getApplicationContext());
+                } catch (InterruptedException ignored) {
+                }
+            }, "kgv-notify-access").start();
+        }
         if (!Prefs.onKgvRom()) return;
         Prefs.applyDoubleTapDefault(context);
         if (!"off".equals(Prefs.dnsMode())) Prefs.setDnsMode(context, Prefs.dnsMode());

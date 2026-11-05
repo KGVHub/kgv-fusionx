@@ -67,6 +67,8 @@ final class Commands {
             switch (cmd) {
                 case "snapshot":
                     return page(tab, a.optInt("offset", 0), null);
+                case "describe":   // what an element is, for the assistant's approvals
+                    return ok(eval(tab, "__kgv.describe(" + a.optInt("ref") + ")"), tab);
                 case "click":
                     step(tab, "Click [" + a.optInt("ref") + "]");
                     return act(tab, "__kgv.click(" + a.optInt("ref") + ")");
