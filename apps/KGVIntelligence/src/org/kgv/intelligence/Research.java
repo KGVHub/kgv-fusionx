@@ -255,12 +255,37 @@ final class Research {
             if (same(o, ref, "pmid") || same(o, ref, "doi")) {
                 if (!TextUtils.isEmpty(note)) o.put("note", note);
                 saveLibrary(c, lib);
-                return "Already in the library as [" + (i + 1) + "].";
+                return "Already in the library as [" + (i + 1) + "]." + evidence(o);
             }
         }
         lib.put(ref);
         saveLibrary(c, lib);
-        return "Saved as [" + lib.length() + "] " + vancouver(ref);
+        return "Saved as [" + lib.length() + "] " + vancouver(ref) + evidence(ref);
+    }
+
+    /**
+     * The abstract's results and conclusions, returned with every save so the note (and
+     * the review written from it) rests on what the paper reports, not on memory.
+     */
+    private static String evidence(JSONObject ref) {
+        String pmid = ref.optString("pmid");
+        if (pmid.isEmpty()) return "";
+        try {
+            String abs = pubmedAbstracts(pmid);
+            int at = -1;
+            for (String key : new String[]{"RESULTS:", "FINDINGS:", "MAIN RESULTS:"}) {
+                int i = abs.indexOf(key);
+                if (i >= 0 && (at < 0 || i < at)) at = i;
+            }
+            String part = at >= 0 ? abs.substring(at) : abs;
+            int stop = part.indexOf("\n\nDOI:");
+            if (stop < 0) stop = part.indexOf("\nCopyright");
+            if (stop > 0) part = part.substring(0, stop);
+            return "\nFrom its abstract (use only these numbers; correct the note with "
+                    + "save_reference if it differs):\n" + Web.clip(part.trim(), 1800);
+        } catch (IOException e) {
+            return "";
+        }
     }
 
     private static boolean same(JSONObject a, JSONObject b, String key) {
@@ -351,10 +376,28 @@ final class Research {
     }
 
     /** Writes a Markdown note (summary, review table, extraction sheet) to Documents. */
-    static String saveNote(Context c, String title, String content) throws IOException {
+    static String saveNote(Context c, String title, String content, boolean append)
+            throws IOException {
+        String name = noteName(title);
+        String before = append ? readNote(title) : null;
+        if (before != null && !before.isEmpty()) content = before.replaceAll("\\s+$", "")
+                + "\n\n" + content;
+        String path = writeDocument(c, name + ".md", content);
+        return (before != null ? "Added to " : "Saved to ") + path + " (" + content.length()
+                + " characters in all).";
+    }
+
+    private static String noteName(String title) {
         String name = title.replaceAll("[^A-Za-z0-9 _\\-]", "").trim();
-        if (name.isEmpty()) name = "note";
-        return "Saved to " + writeDocument(c, name + ".md", content);
+        return name.isEmpty() ? "note" : name;
+    }
+
+    /** A note saved with saveNote, or null if there is none of that title. */
+    static String readNote(String title) throws IOException {
+        File f = new File(Environment.getExternalStorageDirectory(),
+                Environment.DIRECTORY_DOCUMENTS + "/" + FOLDER + "/" + noteName(title) + ".md");
+        if (!f.exists()) return null;
+        return new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
     }
 
     private static String writeDocument(Context c, String name, String content) throws IOException {
