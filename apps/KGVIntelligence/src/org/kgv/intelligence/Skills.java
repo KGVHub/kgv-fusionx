@@ -310,6 +310,12 @@ final class Skills {
                     params("title", "string", "", "content", "string", "Markdown",
                             "append", "boolean", "add to the end of the note of this title"),
                     "title", "content");
+            other("edit_note", "Correct part of a saved note: replace one exact piece of "
+                    + "its text (e.g. a wrong figure in a sentence or table row).",
+                    params("title", "string", "the note's title", "find", "string",
+                            "the exact text to replace, unique in the note",
+                            "replace", "string", "the new text"),
+                    "title", "find");
         } catch (JSONException e) {
             throw new IllegalStateException(e);
         }
@@ -434,6 +440,7 @@ final class Skills {
             case "remove_reference": return "Removing reference " + a.optInt("number");
             case "export_references": return "Exporting references";
             case "save_note": return "Saving \"" + clip(a.optString("title"), 40) + "\"";
+            case "edit_note": return "Correcting \"" + clip(a.optString("title"), 40) + "\"";
             default: {
                 Def d = def(name);
                 if (d != null && d.label != null) {
@@ -576,6 +583,9 @@ final class Skills {
                 return new Result(Research.removeReference(c, a.optInt("number")));
             case "export_references":
                 return new Result(Research.exportReferences(c, a.optString("format", "vancouver")));
+            case "edit_note":
+                return new Result(Research.editNote(c, a.optString("title"),
+                        a.optString("find"), a.optString("replace")));
             case "save_note":
                 return new Result(Research.saveNote(c, a.optString("title"),
                         a.optString("content"), a.optBoolean("append")));

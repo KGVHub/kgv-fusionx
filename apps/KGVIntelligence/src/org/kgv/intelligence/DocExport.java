@@ -61,6 +61,8 @@ final class DocExport {
                         "note", "string", "instead of content: the title of a note saved "
                                 + "with save_note",
                         "format", "string", "docx (default) or pdf",
+                        "accept_unverified", "boolean", "export even though the fact check "
+                                + "flagged figures (only ones you verified in a full text)",
                         "style", "string", "vancouver (default) or apa",
                         "references", "string", "cited (default: the library numbers "
                                 + "cited as [n] in the text, renumbered in order of first "
@@ -88,6 +90,38 @@ final class DocExport {
             return "Nothing to export: give content, or note (a note saved with save_note).";
         }
         String which = a.optString("references", "").trim();
+        if (!apa && which.matches("\\d+(\\s*[,;\\s]\\s*\\d+)*")) {
+            // A list of library numbers. If the text cites those library numbers ([16],
+            // [31]) rather than 1, 2, 3 in list order, treat it like "cited"; otherwise
+            // turn the list positions into library numbers, so both are checked and
+            // renumbered the same way.
+            List<Integer> list = new ArrayList<>();
+            for (String n : which.split("[,;\\s]+")) list.add(Integer.parseInt(n));
+            String[] cited = citedVancouver(content);
+            boolean libraryNumbers = !cited[1].isEmpty();
+            for (String n : cited[1].isEmpty() ? new String[0] : cited[1].split(",")) {
+                libraryNumbers &= list.contains(Integer.parseInt(n));
+            }
+            if (!libraryNumbers) content = toLibraryNumbers(content, list);
+            which = "cited";
+        }
+        // Figures must be in the cited papers (abstract / open-access full text).
+        if (!apa && !a.optBoolean("accept_unverified")) {
+            List<FactCheck.Issue> issues = FactCheck.check(c, content);
+            if (!issues.isEmpty()) {
+                return "Not saved: these figures aren't in what the cited papers report "
+                        + "(their abstracts and open-access full texts):\n"
+                        + FactCheck.report(issues)
+                        + "Check each against pubmed_abstracts / read_fulltext and correct "
+                        + "the note with edit_note: use the paper's own figure, or fix the "
+                        + "citation. A figure you calculated from the paper's numbers (a sum, "
+                        + "a difference) is allowed if the text says so, e.g. \"11,386 (6,131 "
+                        + "+ 5,255)\". Then export again. Only for figures you verified in a "
+                        + "full text, export with accept_unverified=true: the document will "
+                        + "list them as unverified.";
+            }
+        }
+        List<FactCheck.Issue> unverified = apa ? new ArrayList<>() : FactCheck.check(c, content);
         // "library" usually means "from the library": list only what the text cites.
         if (which.isEmpty() || "cited".equalsIgnoreCase(which)
                 || "library".equalsIgnoreCase(which)) {
@@ -110,6 +144,10 @@ final class DocExport {
             body.get(0).kind = Block.TITLE;
         }
         blocks.addAll(body);
+        if (!unverified.isEmpty()) {
+            blocks.addAll(parse("> Not verified against the cited papers' abstracts: "
+                    + FactCheck.report(unverified).replace("\n", " ").trim()));
+        }
         int refs = addReferences(c, blocks, which, apa);
 
         String name = title.replaceAll("[\\\\/:*?\"<>|]", " ").replaceAll("\\s+", " ").trim();
@@ -195,6 +233,23 @@ final class DocExport {
             }
         }
         return list.toString();
+    }
+
+    /** [1] [2] in the order of a list of library numbers → those library numbers. */
+    private static String toLibraryNumbers(String text, List<Integer> list) {
+        java.util.regex.Matcher m = CITE.matcher(text);
+        StringBuffer out = new StringBuffer();
+        while (m.find()) {
+            List<Integer> nums = new ArrayList<>();
+            for (int n : expand(m.group(1))) {
+                nums.add(n >= 1 && n <= list.size() ? list.get(n - 1) : n);
+            }
+            StringBuilder s = new StringBuilder();
+            for (int n : nums) s.append(s.length() == 0 ? "" : ",").append(n);
+            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement("[" + s + "]"));
+        }
+        m.appendTail(out);
+        return out.toString();
     }
 
     /** Appends the References heading and entries; returns how many. */

@@ -392,6 +392,24 @@ final class Research {
         return name.isEmpty() ? "note" : name;
     }
 
+    /** Replaces text in a saved note (to correct a figure without rewriting it all). */
+    static String editNote(Context c, String title, String find, String replace)
+            throws IOException {
+        String note = readNote(title);
+        if (note == null) return "No note titled \"" + title + "\".";
+        int at = note.indexOf(find);
+        if (find.isEmpty() || at < 0) {
+            return "That text isn't in the note; copy it exactly (a short unique part is "
+                    + "enough).";
+        }
+        if (note.indexOf(find, at + 1) >= 0) {
+            return "That text occurs more than once; include more around it.";
+        }
+        writeDocument(c, noteName(title) + ".md",
+                note.substring(0, at) + replace + note.substring(at + find.length()));
+        return "Changed it in " + noteName(title) + ".md.";
+    }
+
     /** A note saved with saveNote, or null if there is none of that title. */
     static String readNote(String title) throws IOException {
         File f = new File(Environment.getExternalStorageDirectory(),
