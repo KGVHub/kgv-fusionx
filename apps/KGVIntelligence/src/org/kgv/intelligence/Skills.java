@@ -308,7 +308,8 @@ final class Skills {
                     + "For a long document, save it in sections: the first with append "
                     + "false, the rest with append true.",
                     params("title", "string", "", "content", "string", "Markdown",
-                            "append", "boolean", "add to the end of the note of this title"),
+                            "append", "boolean", "add to the end of the note of this title",
+                            "replace", "boolean", "really replace a longer existing note"),
                     "title", "content");
             other("edit_note", "Correct part of a saved note: replace one exact piece of "
                     + "its text (e.g. a wrong figure in a sentence or table row).",
@@ -588,7 +589,8 @@ final class Skills {
                         a.optString("find"), a.optString("replace")));
             case "save_note":
                 return new Result(Research.saveNote(c, a.optString("title"),
-                        a.optString("content"), a.optBoolean("append")));
+                        a.optString("content"), a.optBoolean("append"),
+                        a.optBoolean("replace")));
             default:
                 return null;
         }

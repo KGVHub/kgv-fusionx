@@ -88,6 +88,8 @@ final class LlmClient {
             JSONObject msg = json.getJSONArray("choices").getJSONObject(0)
                     .getJSONObject("message");
             // Reasoning models put their thinking in the content; keep only the answer.
+            // A message with only tool calls may carry "content": null.
+            if (msg.isNull("content")) msg.put("content", "");
             String content = msg.optString("content", "");
             int end = content.lastIndexOf("</think>");
             if (end >= 0) msg.put("content", content.substring(end + 8).trim());
