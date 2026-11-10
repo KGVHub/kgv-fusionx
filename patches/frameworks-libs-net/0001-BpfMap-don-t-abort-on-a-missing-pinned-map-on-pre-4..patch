@@ -1,0 +1,35 @@
+From 77e5cd216ba1452b6999bb2d47b7555e2dbfeee2 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <pravinraj@modiarmy.com>
+Date: Sat, 31 Oct 2026 07:42:20 +0530
+Subject: [PATCH] BpfMap: don't abort on a missing pinned map on pre-4.9
+ kernels
+
+Kernels older than 4.9 have no eBPF, so bpfloader pins no maps. The
+path constructor aborted when the map could not be opened, which crashed
+system_server in NetworkStatsService (libnetworkstats) even though its
+callers check isValid() and return an error. On those kernels, leave the
+map invalid instead.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I82c7de9c1311157f9ac48632b0555e0b29e0e964
+---
+ common/native/bpf_headers/include/bpf/BpfMap.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/common/native/bpf_headers/include/bpf/BpfMap.h b/common/native/bpf_headers/include/bpf/BpfMap.h
+index 2bee2ee..553073c 100644
+--- a/common/native/bpf_headers/include/bpf/BpfMap.h
++++ b/common/native/bpf_headers/include/bpf/BpfMap.h
+@@ -50,6 +50,9 @@ class BpfMap {
+     // flag must be within BPF_OBJ_FLAG_MASK, ie. 0, BPF_F_RDONLY, BPF_F_WRONLY
+     BpfMap<Key, Value>(const char* pathname, uint32_t flags) {
+         mMapFd.reset(mapRetrieve(pathname, flags));
++        // Kernels older than 4.9 have no eBPF, so nothing is ever pinned; leave
++        // the map invalid (callers check isValid()) instead of aborting.
++        if (mMapFd < 0 && !isAtLeastKernelVersion(4, 9, 0)) return;
+         if (mMapFd < 0) abort();
+         if (isAtLeastKernelVersion(4, 14, 0)) {
+             if (bpfGetFdKeySize(mMapFd) != sizeof(Key)) abort();
+-- 
+2.53.0
+

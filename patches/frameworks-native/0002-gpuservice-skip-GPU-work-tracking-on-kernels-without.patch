@@ -1,0 +1,45 @@
+From 2548ac1463b876b53dd4873ac423c25de62c8f4b Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <pravinraj@modiarmy.com>
+Date: Sat, 31 Oct 2026 06:20:39 +0530
+Subject: [PATCH] gpuservice: skip GPU work tracking on kernels without eBPF
+
+GpuWork::initialize() opens its BPF maps through BpfMap's path
+constructor, which aborts when the map does not exist. Kernels older
+than 4.9 cannot load the Android 13 eBPF programs (bpfloader skips
+them), so gpuservice crashed in a loop. Return early there instead.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Ia4e1af3742c875c8b344f7363d543b576149147b
+---
+ services/gpuservice/gpuwork/GpuWork.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/services/gpuservice/gpuwork/GpuWork.cpp b/services/gpuservice/gpuwork/GpuWork.cpp
+index 974ae38b13..e1762625eb 100644
+--- a/services/gpuservice/gpuwork/GpuWork.cpp
++++ b/services/gpuservice/gpuwork/GpuWork.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include <android-base/stringprintf.h>
+ #include <binder/PermissionCache.h>
++#include <bpf/BpfUtils.h>
+ #include <bpf/WaitForProgsLoaded.h>
+ #include <libbpf.h>
+ #include <log/log.h>
+@@ -118,6 +119,13 @@ GpuWork::~GpuWork() {
+ }
+ 
+ void GpuWork::initialize() {
++    // Kernels older than 4.9 have no eBPF, so the GPU work maps never exist
++    // and BpfMap's constructor would abort; run without GPU work tracking.
++    if (!bpf::isAtLeastKernelVersion(4, 9, 0)) {
++        ALOGI("kernel older than 4.9: GPU work tracking disabled");
++        return;
++    }
++
+     // Make sure BPF programs are loaded.
+     bpf::waitForProgsLoaded();
+ 
+-- 
+2.53.0
+
