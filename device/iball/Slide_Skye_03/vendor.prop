@@ -3,3 +3,18 @@ ro.lmk.use_psi=false
 ro.lmk.use_minfree_levels=true
 ro.boot.avb_version=1.0
 ro.product.first_api_level=27
+# Stock WCN (Wi-Fi/BT/GNSS chip) properties; without ro.wcn.hardware.etcpath
+# libbt-vendor looks for connectivity_configure.ini in /system/etc and sends
+# the controller a default pskey, which makes the CP2 firmware assert.
+ro.wcn=enabled
+ro.wcn.hardware.product=pike2
+ro.wcn.hardware.etcpath=/vendor/etc
+ro.wcn.gpschip=ge2
+ro.ge2.mode=gps_beidou
+ro.bt.bdaddr_path=/data/misc/bluedroid/btmac.txt
+ro.modem.wcn.enable=1
+ro.modem.wcn.diag=/dev/slog_wcn
+ro.modem.wcn.id=1
+ro.modem.wcn.count=1
+ro.modem.gnss.diag=/dev/slog_gnss
+persist.sys.wcn.log_dest=0

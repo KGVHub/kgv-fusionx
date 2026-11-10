@@ -54,6 +54,9 @@ FIXUPS = {
     # bring wlan0 up (and to load and unload the driver).
     "etc/init/android.hardware.wifi@1.0-service.rc": [
         (b"    user system wifi\n", b"    capabilities NET_ADMIN NET_RAW SYS_MODULE\n    user wifi\n")],
+    # Same for Bluetooth: rfkill needs NET_ADMIN to power the controller.
+    "etc/init/android.hardware.bluetooth@1.0-service.rc": [
+        (b"    user bluetooth\n", b"    capabilities BLOCK_SUSPEND NET_ADMIN SYS_NICE\n    user bluetooth\n")],
     # The 8.1 libbase and libhwbinder calls Android 13 dropped come from
     # shims/libbas8 and shims/libhwbinde8, which link the real libraries.
     "bin/hw/android.hardware.wifi@1.0-service": [(b"\0libbase.so\0", b"\0libbas8.so\0")],

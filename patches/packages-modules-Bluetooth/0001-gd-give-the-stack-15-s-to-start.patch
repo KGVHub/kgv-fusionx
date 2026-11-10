@@ -1,0 +1,33 @@
+From e32bed08862f3e5411c1f21a3bb773c910f146d9 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Tue, 10 Nov 2026 22:04:41 +0530
+Subject: [PATCH] gd: give the stack 15 s to start
+
+Legacy vendor HALs download the controller firmware inside initialize();
+the SPRD HAL on the iBall Slide Skye 03 takes about 6.5 s, so the 3 s
+limit aborted every Bluetooth start ("Can't start stack").
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: If39045faea8b51ec51c429fdd614d27a7844d425
+---
+ system/gd/stack_manager.cc | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/system/gd/stack_manager.cc b/system/gd/stack_manager.cc
+index 17b6582757..87699ca2c3 100644
+--- a/system/gd/stack_manager.cc
++++ b/system/gd/stack_manager.cc
+@@ -45,7 +45,9 @@ void StackManager::StartUp(ModuleList* modules, Thread* stack_thread) {
+   handler_->Post(common::BindOnce(&StackManager::handle_start_up, common::Unretained(this), modules, stack_thread,
+                                   std::move(promise)));
+ 
+-  auto init_status = future.wait_for(std::chrono::seconds(3));
++  // Legacy vendor HALs download the controller firmware during initialize();
++  // the iBall's SPRD HAL needs about 6.5 s, so 3 s aborted every start.
++  auto init_status = future.wait_for(std::chrono::seconds(15));
+ 
+   WakelockManager::Get().Release();
+ 
+-- 
+2.53.0
+
