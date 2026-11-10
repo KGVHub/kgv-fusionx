@@ -1,0 +1,8 @@
+// Vendor libicuuc.so for the stock power HAL (power.sprd.so); see icuuc_shim.c.
+cc_library_shared {
+    name: "libicuuc_iball_shim",
+    stem: "libicuuc",
+    vendor: true,
+    srcs: ["icuuc_shim.c"],
+    cflags: ["-Wall", "-Werror"],
+}

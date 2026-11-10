@@ -1,0 +1,12 @@
+# Wi-Fi: the stock 8.1 HAL and wpa_supplicant (see tools/gen-vendor.py);
+# wifi-driver.sh creates the supplicant config and loads the driver.
+on post-fs-data
+    exec - root root -- /vendor/bin/sh /vendor/bin/wifi-driver.sh conf
+
+service vendor.wifi-driver /vendor/bin/sh /vendor/bin/wifi-driver.sh
+    user root
+    oneshot
+    disabled
+
+on property:sys.boot_completed=1
+    start vendor.wifi-driver

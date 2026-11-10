@@ -12,9 +12,23 @@ out = os.path.join(top, "vendor/iball", dev)
 
 vndk = set(re.findall(r"[\w.@+-]+\.so", open(os.path.join(top, "build/make/target/product/gsi/33.txt")).read()))
 vndk |= {"libbinder.so", "libhwbinder.so", "libvndksupport.so"}
-# HALs rebuilt from source (impl libs, services, init scripts)
+# Old copies of libraries the build installs on vendor: 8.1 libhidltransport
+# (now an empty shim over libhidlbase), the keymaster libraries that the
+# KeyMint service links against, libmemunreachable (the 8.1 one calls
+# malloc_iterate, which libc no longer exports to vendor; breaks the audio
+# HAL), libhwminijail (the 8.1 one wants an old libbase LogMessage) and
+# libeffects (lacks EffectCreateOnDevice, which the effect HAL needs).
+vndk |= {"libhidltransport.so", "libkeymaster_messages.so", "libkeymaster_portable.so",
+         "libsoftkeymasterdevice.so", "libmemunreachable.so", "libhwminijail.so",
+         "libeffects.so"}
+# HALs rebuilt from source (impl libs, services, init scripts); configstore
+# comes from base_vendor.mk as the 1.1 service
 rebuilt = re.compile(r"android\.hardware\.(audio|graphics|health|memtrack|light|sensors|vibrator|"
-                     r"keymaster|gatekeeper|camera\.provider|usb)[.@]")
+                     r"keymaster|gatekeeper|camera\.provider|usb|cas|configstore)[.@]")
+# Wi-Fi is the stock 8.1 stack (HAL, libwifi-hal, wpa_supplicant), which keeps
+# the WCN chip alive; Android 13's generic supplicant leaves it hung after one
+# scan. Only the HIDL interface libraries come from the Android 13 build.
+rebuilt_files = {"lib/android.hardware.wifi@1.0.so"}
 skip_top = {"build.prop", "default.prop", "manifest.xml", "compatibility_matrix.xml", "lost+found", "app", "overlay"}
 
 copies, skipped = [], []
@@ -25,7 +39,9 @@ for root, dirs, files in os.walk(src):
     for f in sorted(files):
         rel = os.path.normpath(os.path.join(rel_root, f))
         if rel in skip_top or rel.startswith("etc/selinux/") \
-                or (rel.startswith("lib/") and f in vndk) or rebuilt.search(f):
+                or (rel.startswith("lib/") and f in vndk) \
+                or rebuilt.search(f) \
+                or rel in rebuilt_files:
             skipped.append(rel)
             continue
         copies.append(rel)
@@ -33,9 +49,17 @@ for root, dirs, files in os.walk(src):
 # Stock init scripts that Android 13's host_init_verifier rejects.
 # (old, new) replacements; each old string must be present.
 FIXUPS = {
-    # "user" takes one name; the 8.1 init ignored the extra one.
+    # "user" takes one name; the 8.1 init ignored the extra one. Android 13's
+    # init gives services no capabilities unless asked, and the HAL needs them to
+    # bring wlan0 up (and to load and unload the driver).
     "etc/init/android.hardware.wifi@1.0-service.rc": [
-        (b"    user system wifi\n", b"    user wifi\n")],
+        (b"    user system wifi\n", b"    capabilities NET_ADMIN NET_RAW SYS_MODULE\n    user wifi\n")],
+    # The 8.1 libbase and libhwbinder calls Android 13 dropped come from
+    # shims/libbas8 and shims/libhwbinde8, which link the real libraries.
+    "bin/hw/android.hardware.wifi@1.0-service": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
+    "lib/libwifi-hal.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
+    "lib/libwifi-system.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
+    "bin/hw/wpa_supplicant": [(b"\0libhwbinder.so\0", b"\0libhwbinde8.so\0")],
     # NAND-only command (this tablet is eMMC); fstab moved to /vendor.
     "etc/init/charge.rc": [
         (b"    ubiattach 0 ubipac\n", b""),
@@ -46,6 +70,28 @@ FIXUPS = {
         (b"socket rpmbserver stream 0666 rpmbserver rpmbserver", b"socket rpmbserver stream 0666 system system")],
     "etc/init/ylog_lite.rc": [
         (b"socket ylog seqpacket 0666 ylog ylog", b"socket ylog seqpacket 0666 system system")],
+    # libfmjni lists libmedia.so as NEEDED but uses none of its symbols, and the
+    # 8.1 libmedia pulls in libicuuc, which vendor can't load; connmgr (wcnd,
+    # which brings up Wi-Fi/BT) links libfmjni via libengfm. Point the NEEDED
+    # entry at liblog.so (already NEEDED) instead.
+    "lib/libfmjni.so": [
+        (b"\0libmedia.so\0", b"\0liblog.so\0\0\0")],
+    # The 8.1 libui ABI the composer blob needs comes from libu8 (shims/libu8),
+    # which links the real libui.
+    "lib/hw/hwcomposer.sp7731e.so": [
+        (b"\0libui.so\0", b"\0libu8.so\0")],
+}
+
+# (file offset, old bytes, new bytes) patches for code the string fixups can't
+# target. hwcomposer.sp7731e.so allocates libui objects itself with the 8.1
+# sizes before calling Android 13's constructors: GraphicBuffer grew from 136
+# to 160 bytes and GraphicBufferMapper from 4 to 8 (Thumb "movs r0, #size"
+# before each operator new).
+PATCHES = {
+    "lib/hw/hwcomposer.sp7731e.so": [
+        (0x1e588, b"\x88\x20", b"\xa0\x20"),
+        (0x22c64, b"\x88\x20", b"\xa0\x20"),
+        (0x1fae6, b"\x04\x20", b"\x08\x20")],
 }
 
 os.makedirs(out, exist_ok=True)
@@ -64,6 +110,9 @@ for rel in copies:
         for old, new in FIXUPS.get(rel, []):
             assert old in data, "%s: fixup no longer applies: %r" % (rel, old)
             data = data.replace(old, new)
+        for off, old, new in PATCHES.get(rel, []):
+            assert data[off:off + len(old)] == old, "%s: patch no longer applies at %#x" % (rel, off)
+            data = data[:off] + new + data[off + len(new):]
         with open(dst, "wb") as o:
             o.write(data)
 

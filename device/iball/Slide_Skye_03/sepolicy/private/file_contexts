@@ -1,0 +1,2 @@
+/(system_ext|system/system_ext)/bin/kgv_rootd          u:object_r:kgv_rootd_exec:s0
+/dev/socket/kgv_rootd                                   u:object_r:kgv_rootd_socket:s0

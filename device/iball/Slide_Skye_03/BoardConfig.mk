@@ -22,7 +22,7 @@ TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/zImage
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_PAGESIZE := 2048
 # Bring-up: permissive until the vendor policy is written for 33.0.
-BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive
+BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive loglevel=8
 
 # Partitions (bytes, from /proc/partitions)
 BOARD_FLASH_BLOCK_SIZE := 131072
@@ -60,8 +60,14 @@ TARGET_VENDOR_PROP := $(DEVICE_PATH)/vendor.prop
 
 # SELinux
 BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
+# kgv_rootd (KGV X Intelligence root daemon), as on mido
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/private
 
 MALLOC_SVELTE := true
 VENDOR_SECURITY_PATCH := 2019-05-05
 
 -include vendor/iball/Slide_Skye_03/BoardConfigVendor.mk
+
+# Wi-Fi: the stock 8.1 HAL and wpa_supplicant (see tools/gen-vendor.py). Its
+# libwifi-hal loads the driver from /lib/modules.
+BOARD_ROOT_EXTRA_SYMLINKS += /vendor/lib/modules:/lib/modules

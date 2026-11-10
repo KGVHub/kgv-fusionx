@@ -1,0 +1,30 @@
+# KGV FusionX: kgv_rootd, which runs KGV X Intelligence's root commands
+# (packages/apps/KGVIntelligence/rootd). The assistant may do anything root can,
+# so the daemon is unconfined like su: permissive, on userdebug builds only.
+type kgv_rootd, domain, coredomain, mlstrustedsubject;
+type kgv_rootd_exec, system_file_type, exec_type, file_type;
+type kgv_rootd_socket, file_type, coredomain_socket, mlstrustedobject;
+
+init_daemon_domain(kgv_rootd)
+userdebug_or_eng(`permissive kgv_rootd;')
+
+# Only KGV X Intelligence (system_app) talks to it; the daemon also checks the
+# peer is the system user.
+unix_socket_connect(system_app, kgv_rootd, kgv_rootd)
+
+# Root access on/off (persist.kgv.root).
+system_internal_prop(kgv_root_prop)
+set_prop(system_app, kgv_root_prop)
+
+# Root commands that talk to system services (cmd, pm, am, settings, wm, dumpsys)
+# hand the service their stdin/stdout/stderr and a callback; the services' own
+# domains are enforcing, so they must be allowed to use them, or every such
+# command fails with "Failed transaction".
+binder_use(kgv_rootd)
+binder_call(kgv_rootd, system_server)
+binder_call(system_server, kgv_rootd)
+binder_call(kgv_rootd, surfaceflinger)
+binder_call(surfaceflinger, kgv_rootd)
+allow { system_server surfaceflinger } kgv_rootd:fd use;
+allow { system_server surfaceflinger } kgv_rootd:fifo_file { read write getattr append ioctl };
+allow { system_server surfaceflinger } kgv_rootd:unix_stream_socket { read write getattr };

@@ -16,8 +16,15 @@ d = open(sys.argv[1], 'rb').read()
 b = d[struct.unpack_from('<I', d, 24)[0]:]
 open(sys.argv[2], 'wb').write(b[:struct.unpack_from('>I', b, 4)[0]])
 P
+# The bootloader ignores the header cmdline and boots with the DTB's
+# /chosen/bootargs, so add the BoardConfig arguments that are missing there.
+ARGS=$(fdtget "$T/dtb" /chosen bootargs)
+for a in $CMDLINE; do
+  case " $ARGS " in *" $a "*) ;; *) ARGS="$ARGS $a" ;; esac
+done
+fdtput -t s "$T/dtb" /chosen bootargs "$ARGS"
 python3 "$DEV/tools/pack_sprd_boot.py" "$DEV/prebuilt/boot-header.bin" "$DEV/prebuilt/zImage" \
     "$P/ramdisk.img" "$T/dtb" "$CMDLINE" "$OUT"
 python3 "$AVB/avbtool.py" add_hash_footer --image "$OUT" --partition_name boot \
     --partition_size 36700160 --key "$AVB/testkey_rsa4096.pem" --algorithm SHA256_RSA4096
-echo "wrote $OUT (cmdline: $CMDLINE)"
+echo "wrote $OUT (bootargs: $ARGS)"
