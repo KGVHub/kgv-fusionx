@@ -1,0 +1,51 @@
+From 8197ac0a28341603c7f38dd436c950c294d99ea7 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <pravinraj@modiarmy.com>
+Date: Sat, 31 Oct 2026 07:15:24 +0530
+Subject: [PATCH] BandwidthController: skip xt_bpf rules on pre-4.9 kernels
+
+Kernels older than 4.9 have no xt_bpf match and bpfloader pins no
+programs there, so the -m bpf rules in the basic accounting ruleset made
+iptables-restore fail, and netd exits when BandwidthController cannot
+initialize (restarting zygote with it). Leave those rules out there; the
+penalty/happy boxes and BPF interface accounting become no-ops.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Ieea2128715ece442f5c55fd5d5daa467ebf281fe
+---
+ server/BandwidthController.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/server/BandwidthController.cpp b/server/BandwidthController.cpp
+index 8dba75a5..987226ce 100644
+--- a/server/BandwidthController.cpp
++++ b/server/BandwidthController.cpp
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include <ctype.h>
++#include <algorithm>
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <stdio.h>
+@@ -255,6 +256,18 @@ std::vector<std::string> getBasicAccountingCommands() {
+             ("-A bw_mangle_POSTROUTING -m bpf --object-pinned " XT_BPF_EGRESS_PROG_PATH),
+             COMMIT_AND_CLOSE};
+     // clang-format on
++    // Kernels older than 4.9 have no xt_bpf match and bpfloader pins no
++    // programs there, so the -m bpf rules would make the whole restore (and
++    // netd) fail. Without them the penalty/happy boxes and BPF interface
++    // accounting are no-ops.
++    if (!android::bpf::isAtLeastKernelVersion(4, 9, 0)) {
++        auto& cmds = ipt_basic_accounting_commands;
++        cmds.erase(std::remove_if(cmds.begin(), cmds.end(),
++                                  [](const std::string& cmd) {
++                                      return cmd.find(" -m bpf ") != std::string::npos;
++                                  }),
++                   cmds.end());
++    }
+     return ipt_basic_accounting_commands;
+ }
+ 
+-- 
+2.53.0
+

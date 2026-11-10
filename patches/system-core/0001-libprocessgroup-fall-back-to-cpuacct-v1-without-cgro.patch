@@ -1,0 +1,70 @@
+From e48c971b3aea76373f3a3b178afc9d2a0db8a9f7 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <pravinraj@modiarmy.com>
+Date: Fri, 30 Oct 2026 21:50:49 +0530
+Subject: [PATCH] libprocessgroup: fall back to cpuacct v1 without cgroup v2
+
+Kernel 4.4 cannot mount cgroup v2, so creating any process group failed
+and init could not start services (ueventd, apexd-bootstrap, ...). When
+the cgroup2 controller is not usable but cpuacct is, use the v1 cpuacct
+hierarchy for the uid/pid process groups, as Android 11 did.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: Ice43b23da207a7bef0e54af4b9d44fc000b1a596
+---
+ libprocessgroup/processgroup.cpp | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/libprocessgroup/processgroup.cpp b/libprocessgroup/processgroup.cpp
+index 267e62c67..96dd614d2 100644
+--- a/libprocessgroup/processgroup.cpp
++++ b/libprocessgroup/processgroup.cpp
+@@ -69,6 +69,16 @@ bool CgroupGetControllerPath(const std::string& cgroup_name, std::string* path)
+     return true;
+ }
+ 
++// Root of the per-uid/pid process group hierarchy: cgroup v2, or on kernels
++// without it (4.4 and older) the v1 cpuacct hierarchy used before Android 12.
++static bool GetProcessGroupRootPath(std::string* path, bool* is_v2 = nullptr) {
++    auto controller = CgroupMap::GetInstance().FindController(CGROUPV2_CONTROLLER_NAME);
++    auto acct = CgroupMap::GetInstance().FindController("cpuacct");
++    bool v2 = controller.IsUsable() || !acct.IsUsable();
++    if (is_v2) *is_v2 = v2;
++    return CgroupGetControllerPath(v2 ? CGROUPV2_CONTROLLER_NAME : "cpuacct", path);
++}
++
+ static bool CgroupGetMemcgAppsPath(std::string* path) {
+     CgroupController controller = CgroupMap::GetInstance().FindController("memory");
+ 
+@@ -246,7 +256,7 @@ void removeAllProcessGroupsInternal(bool empty_only) {
+     std::vector<std::string> cgroups;
+     std::string path, memcg_apps_path;
+ 
+-    if (CgroupGetControllerPath(CGROUPV2_CONTROLLER_NAME, &path)) {
++    if (GetProcessGroupRootPath(&path)) {
+         cgroups.push_back(path);
+     }
+     if (CgroupGetMemcgAppsPath(&memcg_apps_path) && memcg_apps_path != path) {
+@@ -418,7 +428,7 @@ static int DoKillProcessGroupOnce(const char* cgroup, uid_t uid, int initialPid,
+ static int KillProcessGroup(uid_t uid, int initialPid, int signal, int retries,
+                             int* max_processes) {
+     std::string hierarchy_root_path;
+-    CgroupGetControllerPath(CGROUPV2_CONTROLLER_NAME, &hierarchy_root_path);
++    GetProcessGroupRootPath(&hierarchy_root_path);
+     const char* cgroup = hierarchy_root_path.c_str();
+ 
+     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+@@ -558,8 +568,9 @@ int createProcessGroup(uid_t uid, int initialPid, bool memControl) {
+         }
+     }
+ 
+-    CgroupGetControllerPath(CGROUPV2_CONTROLLER_NAME, &cgroup);
+-    return createProcessGroupInternal(uid, initialPid, cgroup, true);
++    bool is_v2;
++    GetProcessGroupRootPath(&cgroup, &is_v2);
++    return createProcessGroupInternal(uid, initialPid, cgroup, is_v2);
+ }
+ 
+ static bool SetProcessGroupValue(int tid, const std::string& attr_name, int64_t value) {
+-- 
+2.53.0
+

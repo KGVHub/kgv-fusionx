@@ -1,0 +1,122 @@
+From 7b7ff2c410220ef73fd38965e4f6de34d9efca54 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <pravinraj@modiarmy.com>
+Date: Sat, 31 Oct 2026 06:40:47 +0530
+Subject: [PATCH] Run netd and BpfNetMaps without eBPF on pre-4.9 kernels
+
+Kernels older than 4.9 have no cgroup eBPF, so bpfloader loads nothing and
+the netd maps and programs are never pinned. BpfHandler::init then failed,
+netd exited, and its onrestart restarted zygote in a loop.
+
+- netd: skip BpfHandler init on kernels older than 4.9 (no socket tagging
+  or BPF traffic accounting).
+- BpfNetMaps: native_init reports whether TrafficController opened its
+  maps; when it did not, map update failures are logged instead of thrown,
+  so ConnectivityService can start.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I7cd5822215725e20e70338bdec40be8776a53055
+---
+ netd/BpfHandler.cpp                            |  9 +++++++++
+ service/jni/com_android_server_BpfNetMaps.cpp  |  5 +++--
+ service/src/com/android/server/BpfNetMaps.java | 10 ++++++++--
+ 3 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/netd/BpfHandler.cpp b/netd/BpfHandler.cpp
+index 6ae26c38f..625c47555 100644
+--- a/netd/BpfHandler.cpp
++++ b/netd/BpfHandler.cpp
+@@ -21,6 +21,7 @@
+ #include <linux/bpf.h>
+ 
+ #include <android-base/unique_fd.h>
++#include <bpf/BpfUtils.h>
+ #include <bpf/WaitForProgsLoaded.h>
+ #include <log/log.h>
+ #include <netdutils/UidConstants.h>
+@@ -94,6 +95,14 @@ BpfHandler::BpfHandler(uint32_t perUidLimit, uint32_t totalLimit)
+     : mPerUidStatsEntriesLimit(perUidLimit), mTotalUidStatsEntriesLimit(totalLimit) {}
+ 
+ Status BpfHandler::init(const char* cg2_path) {
++    // Kernels older than 4.9 have no cgroup eBPF, so bpfloader loads nothing.
++    // Run without socket tagging and BPF traffic accounting instead of failing
++    // netd (which restarts zygote with it).
++    if (!android::bpf::isAtLeastKernelVersion(4, 9, 0)) {
++        ALOGI("kernel older than 4.9: running without BPF");
++        return netdutils::status::ok;
++    }
++
+     // Make sure BPF programs are loaded before doing anything
+     android::bpf::waitForProgsLoaded();
+     ALOGI("BPF programs are loaded");
+diff --git a/service/jni/com_android_server_BpfNetMaps.cpp b/service/jni/com_android_server_BpfNetMaps.cpp
+index 7b1f59ca2..20e136f18 100644
+--- a/service/jni/com_android_server_BpfNetMaps.cpp
++++ b/service/jni/com_android_server_BpfNetMaps.cpp
+@@ -39,11 +39,12 @@ static android::net::TrafficController mTc;
+ 
+ namespace android {
+ 
+-static void native_init(JNIEnv* env, jobject clazz) {
++static jboolean native_init(JNIEnv* env, jobject clazz) {
+   Status status = mTc.start();
+    if (!isOk(status)) {
+     ALOGE("%s failed, error code = %d", __func__, status.code());
+   }
++  return isOk(status);
+ }
+ 
+ static jint native_addNaughtyApp(JNIEnv* env, jobject clazz, jint uid) {
+@@ -209,7 +210,7 @@ static void native_dump(JNIEnv* env, jobject clazz, jobject javaFd, jboolean ver
+ // clang-format off
+ static const JNINativeMethod gMethods[] = {
+     /* name, signature, funcPtr */
+-    {"native_init", "()V",
++    {"native_init", "()Z",
+     (void*)native_init},
+     {"native_addNaughtyApp", "(I)I",
+     (void*)native_addNaughtyApp},
+diff --git a/service/src/com/android/server/BpfNetMaps.java b/service/src/com/android/server/BpfNetMaps.java
+index c006bc605..aa0d8079e 100644
+--- a/service/src/com/android/server/BpfNetMaps.java
++++ b/service/src/com/android/server/BpfNetMaps.java
+@@ -40,6 +40,8 @@ public class BpfNetMaps {
+     // Use legacy netd for releases before T.
+     private static final boolean USE_NETD = !SdkLevel.isAtLeastT();
+     private static boolean sInitialized = false;
++    // False when the BPF maps could not be opened (kernels without eBPF).
++    private static boolean sBpfAvailable = true;
+ 
+     /**
+      * Initializes the class if it is not already initialized. This method will open maps but not
+@@ -49,7 +51,7 @@ public class BpfNetMaps {
+         if (sInitialized) return;
+         if (!USE_NETD) {
+             System.loadLibrary("service-connectivity");
+-            native_init();
++            sBpfAvailable = native_init();
+         }
+         sInitialized = true;
+     }
+@@ -67,6 +69,10 @@ public class BpfNetMaps {
+     }
+ 
+     private void maybeThrow(final int err, final String msg) {
++        if (err != 0 && !sBpfAvailable) {
++            Log.w(TAG, msg + " (BPF unavailable): " + Os.strerror(err));
++            return;
++        }
+         if (err != 0) {
+             throw new ServiceSpecificException(err, msg + ": " + Os.strerror(err));
+         }
+@@ -261,7 +267,7 @@ public class BpfNetMaps {
+         native_dump(fd, verbose);
+     }
+ 
+-    private static native void native_init();
++    private static native boolean native_init();
+     private native int native_addNaughtyApp(int uid);
+     private native int native_removeNaughtyApp(int uid);
+     private native int native_addNiceApp(int uid);
+-- 
+2.53.0
+

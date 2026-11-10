@@ -1,0 +1,8 @@
+// 8.1 libhwbinder ABI for the stock wpa_supplicant; see libhwbinde8.cpp.
+cc_library_shared {
+    name: "libhwbinde8",
+    vendor: true,
+    srcs: ["libhwbinde8.cpp"],
+    shared_libs: ["libhidlbase"],
+    cflags: ["-Wall", "-Werror"],
+}

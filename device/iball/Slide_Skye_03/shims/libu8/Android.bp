@@ -1,0 +1,12 @@
+// Android 8.1 libui ABI for the stock hwcomposer.sp7731e.so; see libu8.cpp.
+cc_library_shared {
+    name: "libu8",
+    vendor: true,
+    srcs: ["libu8.cpp"],
+    shared_libs: [
+        "libsync",
+        "libui",
+        "libutils",
+    ],
+    header_libs: ["libhardware_headers"],
+}

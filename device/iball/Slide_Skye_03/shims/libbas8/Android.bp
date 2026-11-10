@@ -1,0 +1,8 @@
+// Android 8.1 libbase ABI for the stock Wi-Fi blobs; see libbas8.cpp.
+cc_library_shared {
+    name: "libbas8",
+    vendor: true,
+    srcs: ["libbas8.cpp"],
+    shared_libs: ["libbase"],
+    cflags: ["-Wall", "-Werror"],
+}

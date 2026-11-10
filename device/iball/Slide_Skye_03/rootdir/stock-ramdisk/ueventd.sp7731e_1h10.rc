@@ -1,3 +1,11 @@
+# Android 8.1's ueventd.rc named ADF nodes after the kernel's DEVNAME
+# (adf0, adf-interface0.0, ...), which is what the stock gralloc's libadf
+# looks for. Android 13 dropped that rule, leaving /dev/sprd-adf-dev*.
+subsystem adf
+    devname uevent_devname
+
+/dev/adf*               0660     system      graphics
+
 /dev/sttygnss0          0660     system      system
 /dev/spipe_gnss0        0660     system      system
 /dev/spipe_gnss1        0660     system      system
