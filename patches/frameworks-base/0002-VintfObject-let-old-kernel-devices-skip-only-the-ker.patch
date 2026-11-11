@@ -1,0 +1,50 @@
+From 0dbada2b0db859051426ce84d14bc6f5821eeda2 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Wed, 11 Nov 2026 07:26:54 +0530
+Subject: [PATCH] VintfObject: let old-kernel devices skip only the kernel
+ check
+
+A device kept on its vendor kernel below the minimum LTS (and configs) of its
+FCM level fails VintfObject.verifyWithoutAvb() on every boot, so
+Build.isBuildConsistent() is false and the "internal problem" dialog shows
+each time. With ro.kgv.vintf_skip_kernel_check=true the runtime info (kernel)
+part is skipped; HAL compatibility is still checked.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ core/jni/android_os_VintfObject.cpp | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/core/jni/android_os_VintfObject.cpp b/core/jni/android_os_VintfObject.cpp
+index 1baea2aecc3c..09704b4d10c6 100644
+--- a/core/jni/android_os_VintfObject.cpp
++++ b/core/jni/android_os_VintfObject.cpp
+@@ -17,6 +17,7 @@
+ #define LOG_TAG "VintfObject"
+ //#define LOG_NDEBUG 0
+ #include <android-base/logging.h>
++#include <android-base/properties.h>
+ 
+ #include <vector>
+ #include <string>
+@@ -95,8 +96,15 @@ static jobjectArray android_os_VintfObject_report(JNIEnv* env, jclass)
+ 
+ static jint android_os_VintfObject_verifyWithoutAvb(JNIEnv* env, jclass) {
+     std::string error;
+-    int32_t status = VintfObject::GetInstance()->checkCompatibility(&error,
+-            ::android::vintf::CheckFlags::DISABLE_AVB_CHECK);
++    auto flags = ::android::vintf::CheckFlags::DISABLE_AVB_CHECK;
++    // KGV: devices kept on an old vendor kernel (below the minimum LTS and
++    // configs of their FCM level) set this to skip only the kernel check, so
++    // a known kernel gap doesn't raise the "internal problem" dialog on every
++    // boot. HAL compatibility is still verified.
++    if (::android::base::GetBoolProperty("ro.kgv.vintf_skip_kernel_check", false)) {
++        flags = flags.disableRuntimeInfo();
++    }
++    int32_t status = VintfObject::GetInstance()->checkCompatibility(&error, flags);
+     if (status)
+         LOG(WARNING) << "VintfObject.verifyWithoutAvb() returns " << status << ": " << error;
+     return status;
+-- 
+2.53.0
+
