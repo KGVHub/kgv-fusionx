@@ -40,6 +40,12 @@ rebuilt_files |= {"lib/android.hardware.camera.common@1.0.so",
                   "lib/camera.device@1.0-impl.so",
                   "lib/libsensorndkbridge.so",
                   "lib/android.frameworks.sensorservice@1.0.so"}
+# Audio: the stock 8.1 usb, r_submix and default modules predate Android 9's
+# audio_hw_device layout change (see shims/audio_wrap), so Android 13's are
+# built instead; the primary module goes through shims/audio_wrap.
+rebuilt_files |= {"lib/hw/audio.usb.default.so",
+                  "lib/hw/audio.r_submix.default.so",
+                  "lib/hw/audio.primary.default.so"}
 # OMX: the 8.1 service needs the 8.1 libgui and libstagefright, which vendor
 # can't load, and while OMX is declared mediaserver (and MediaProvider behind
 # it) waits for it forever. Android 13's service is built instead; it loads
@@ -82,6 +88,13 @@ FIXUPS = {
     "lib/libwifi-hal.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     "lib/libwifi-system.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     "bin/hw/wpa_supplicant": [(b"\0libhwbinder.so\0", b"\0libhwbinde8.so\0")],
+    # Audio HAL: set_sched_policy left libcutils (shims/libcutil8).
+    "lib/hw/audio.primary.sp7731e.so": [(b"\0libcutils.so\0", b"\0libcutil8.so\0")],
+    "lib/libcompresssimu.so": [(b"\0libcutils.so\0", b"\0libcutil8.so\0")],
+    # A stray space before voice_tx: Android 13's parser rejects the whole
+    # file over it, and audio policy falls back to defaults with no outputs.
+    "etc/primary_audio_policy_configuration.xml": [
+        (b"BT SCO Headset Mic, voice_tx", b"BT SCO Headset Mic,voice_tx")],
     # Widevine (L3): the same old LogMessage constructor.
     "bin/hw/android.hardware.drm@1.0-service.widevine": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     # NAND-only command (this tablet is eMMC); fstab moved to /vendor.

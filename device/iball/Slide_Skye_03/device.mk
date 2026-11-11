@@ -130,6 +130,21 @@ PRODUCT_PACKAGES += \
 PRODUCT_SYSTEM_PROPERTIES += \
     ro.kgv.vintf_skip_kernel_check=true
 
+# Audio: the stock 8.1 primary HAL behind shims/audio_wrap (the Android 13
+# audio_hw_device/stream layout), with shims/libcutil8 for set_sched_policy;
+# Android 13's usb and remote submix modules
+PRODUCT_PACKAGES += \
+    audio.primary.sp7731e_a13 \
+    libcutil8 \
+    audio.usb.default \
+    audio.r_submix.default
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.hardware.audio.primary=sp7731e_a13
+
+# zram swap (fstab.sp7731e_1h10, init.sp7731e_1h10.zram.rc)
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/rootdir/etc/init.sp7731e_1h10.zram.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.sp7731e_1h10.zram.rc
+
 # KGV X Intelligence root daemon (packages/apps/KGVIntelligence/rootd); root is on
 # unless the user turns it off in the app (persist.kgv.root)
 PRODUCT_PACKAGES += \
