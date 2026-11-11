@@ -71,3 +71,13 @@ VENDOR_SECURITY_PATCH := 2019-05-05
 # Wi-Fi: the stock 8.1 HAL and wpa_supplicant (see tools/gen-vendor.py). Its
 # libwifi-hal loads the driver from /lib/modules.
 BOARD_ROOT_EXTRA_SYMLINKS += /vendor/lib/modules:/lib/modules
+
+# A11 mode (lineage_Slide_Skye_03_a11): kernel 4.14 and the prebuilt Nokia C1
+# 2E vendor image from a11/mk-vendor.sh, which brings its own VINTF manifest
+# and SELinux policy (vendor policy 30.0).
+ifeq ($(TARGET_PRODUCT),lineage_Slide_Skye_03_a11)
+TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/k414/Image
+BOARD_PREBUILT_VENDORIMAGE := vendor/iball/Slide_Skye_03_a11/vendor.img
+DEVICE_MANIFEST_FILE :=
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/a11/fstab.sp7731e_1h10
+endif

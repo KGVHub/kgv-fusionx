@@ -11,9 +11,17 @@ PRODUCT_CHARACTERISTICS := tablet
 DEVICE_PACKAGE_OVERLAYS += $(DEVICE_PATH)/overlay
 
 # fstab: the ramdisk copy is read by first-stage init, the vendor copy by mount_all.
+ifeq ($(TARGET_PRODUCT),lineage_Slide_Skye_03_a11)
+# A11 mode: the vendor image is prebuilt (a11/mk-vendor.sh puts this fstab
+# in it); system needs the VNDK 30 apex for the Android 11 vendor.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/a11/fstab.sp7731e_1h10:$(TARGET_COPY_OUT_RAMDISK)/fstab.sp7731e_1h10
+PRODUCT_EXTRA_VNDK_VERSIONS := 30
+else
 PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/rootdir/etc/fstab.sp7731e_1h10:$(TARGET_COPY_OUT_RAMDISK)/fstab.sp7731e_1h10 \
     $(DEVICE_PATH)/rootdir/etc/fstab.sp7731e_1h10:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.sp7731e_1h10
+endif
 
 # Kernel 4.4 has no cgroup v2: mount the v1 cpuacct hierarchy on /acct, which
 # libprocessgroup (patched) uses for process groups instead.

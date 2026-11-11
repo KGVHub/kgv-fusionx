@@ -1,0 +1,12 @@
+# iBall Slide Skye 03 with the Nokia C1 2E (Android 11) vendor on kernel 4.14.
+# Fixed partitions (no super/A-B), unencrypted f2fs userdata as on the 4.4 ROM.
+# prodnv mounts at /mnt/vendor, where the Nokia vendor daemons expect it.
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/system     /system      ext4   ro,barrier=1                                              wait,first_stage_mount
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/vendor     /vendor      ext4   ro,barrier=1                                              wait,first_stage_mount
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/userdata   /data        f2fs   noatime,nosuid,nodev,discard,inline_xattr,inline_data    wait,check,formattable
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/cache      /cache       ext4   noatime,nosuid,nodev,noauto_da_alloc                      wait,check,formattable
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/prodnv     /mnt/vendor  ext4   noatime,nosuid,nodev,noauto_da_alloc                      wait,check
+/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/misc       /misc        emmc   defaults                                                  defaults
+/devices/platform/soc/soc:ap-ahb/20300000.sdio/mmc_host/mmc1/mmc1:*/block/mmcblk1 auto auto defaults voldmanaged=sdcard1:auto
+/devices/platform/soc/soc:ap-ahb/20200000.usb/musb-hdrc.0.auto/usb*  auto         auto   defaults                                                  voldmanaged=usb:auto
+/dev/block/zram0                                                    none         swap   defaults                                                  zramsize=50%,max_comp_streams=4

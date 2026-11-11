@@ -33,6 +33,9 @@ The work in this folder is not yet booting. The shipping ROM uses the 4.4.302 ke
   - The overlay matches the stock 8.1 memory map, with ramoops at `0x9e524000`.
 - The bootloader's `fastboot boot` ignores the image sent and boots the boot partition, so tests go through the recovery partition.
 
+- **The 4.4 ROM on 4.14 doesn't boot yet.** It restarts in a loop before USB comes up and leaves no panic record, which points to Android init rebooting rather than a kernel crash. The 8.1 vendor blobs expect the 4.4 kernel (ADF display, Mali r21).
+- **A11 mode** (`A11=1` on the `iball` DAG, product `lineage_Slide_Skye_03_a11`): boots kernel 4.14 with the Nokia C1 2E Android 11 vendor (`a11/mk-vendor.sh`) over VNDK 30. It is wired in but hasn't been built as a ROM yet.
+
 **Warning:** testing in recovery loops. After `adb reboot recovery`, misc stays set, so a hung kernel boots again on every power cycle. To get out:
 
 1. Run `unbrick-recovery.sh` with the backed-up TWRP.
