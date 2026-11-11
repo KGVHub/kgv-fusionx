@@ -124,7 +124,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.media.omx@1.0-service
 
-# The 4.4.83 kernel is below FCM level 3's minimum LTS and kernel configs; skip
+# The 4.4.302 kernel meets FCM level 3's minimum LTS but still lacks required
+# kernel configs (BPF etc.); skip
 # only that part of the boot-time VINTF check (frameworks/base patch), so the
 # "internal problem" dialog doesn't show on every boot.
 PRODUCT_SYSTEM_PROPERTIES += \
