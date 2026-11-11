@@ -126,7 +126,8 @@ export ENABLE_CFI=false
 # envsetup/lunch rely on unset variables
 set +u
 source build/envsetup.sh
-lunch "lineage_${DEVICE}-userdebug"
+# LUNCH_PRODUCT picks another product of the same device (e.g. an A11-vendor mode).
+lunch "${LUNCH_PRODUCT:-lineage_${DEVICE}}-userdebug"
 case "$STAGE" in
   graph) m -j"$JOBS" nothing ;;          # soong + kati only (peak RAM ~4-5 GB)
   full)
