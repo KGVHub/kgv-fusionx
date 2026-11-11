@@ -82,6 +82,8 @@ FIXUPS = {
     "lib/libwifi-hal.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     "lib/libwifi-system.so": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     "bin/hw/wpa_supplicant": [(b"\0libhwbinder.so\0", b"\0libhwbinde8.so\0")],
+    # Widevine (L3): the same old LogMessage constructor.
+    "bin/hw/android.hardware.drm@1.0-service.widevine": [(b"\0libbase.so\0", b"\0libbas8.so\0")],
     # NAND-only command (this tablet is eMMC); fstab moved to /vendor.
     "etc/init/charge.rc": [
         (b"    ubiattach 0 ubipac\n", b""),
