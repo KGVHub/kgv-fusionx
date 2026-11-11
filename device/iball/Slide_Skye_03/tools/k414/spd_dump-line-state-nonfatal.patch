@@ -1,0 +1,11 @@
+--- a/spd_dump.c
++++ b/spd_dump.c
+@@ -126,7 +126,7 @@
+ 				ret = libusb_control_transfer(io->dev_handle,
+ 						0x21, 34, 0x601, 0, NULL, 0, io->timeout);
+ 				if (ret < 0)
+-					ERR_EXIT("libusb_control_transfer failed : %s\n",
++					fprintf(stderr, "warning: libusb_control_transfer failed : %s (continuing)\n",
+ 							libusb_error_name(ret));
+ 				DBG_LOG("libusb_control_transfer ok\n");
+ #endif

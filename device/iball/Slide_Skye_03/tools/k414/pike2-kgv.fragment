@@ -1,0 +1,38 @@
+# KGV pike2 (iBall Slide Skye 03) on the Unisoc 4.14 BSP, applied over the
+# Nokia C1 2nd Edition (IRU) shipping config.
+
+# Integrated WCN (Wi-Fi/BT/FM) -- Nokia names it SC2342_INTEG; this tree splits it.
+CONFIG_SC23XX=y
+CONFIG_WCN_INTEG=y
+CONFIG_SC2342_I=y
+CONFIG_WCN_SIPC=y
+CONFIG_WCN_PLATFORM=y
+
+# exFAT/FAT SD cards via sdfat (no EXFAT_FS in this tree); no sdfat debug.
+CONFIG_SDFAT_FS=y
+# CONFIG_SDFAT_DEBUG is not set
+# CONFIG_SDFAT_DBG_MSG is not set
+# CONFIG_SDFAT_STATISTICS is not set
+# CONFIG_SDFAT_SUPPORT_STLOG is not set
+# CONFIG_SDFAT_UEVENT is not set
+
+# Samsung-only debug features this mirror turns on by default.
+# CONFIG_SEC_EXT is not set
+# CONFIG_SEC_DEBUG is not set
+# CONFIG_SAMSUNG_LMKD_DEBUG is not set
+# CONFIG_PROC_DLOG is not set
+# CONFIG_PROC_FSLOG is not set
+# CONFIG_PROC_STLOG is not set
+# CONFIG_BLOCK_SUPPORT_STLOG is not set
+# CONFIG_FAT_SUPPORT_STLOG is not set
+# CONFIG_FUSE_SUPPORT_STLOG is not set
+# CONFIG_FAT_UEVENT is not set
+# CONFIG_INTERRUPTIBLE_SYNC is not set
+# CONFIG_MEMBLOCK_MEMSIZE is not set
+# CONFIG_MMC_FFU_FUNCTION is not set
+# CONFIG_F2FS_SEC_BLOCK_OPERATIONS_DEBUG is not set
+# CONFIG_F2FS_STRICT_BUG_ON is not set
+
+# Keep the running config readable from the device.
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
