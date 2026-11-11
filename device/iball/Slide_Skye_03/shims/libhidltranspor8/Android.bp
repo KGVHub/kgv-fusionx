@@ -1,0 +1,11 @@
+// 8.1 libhidltransport stand-in for stock HAL blobs; see libhidltranspor8.cpp.
+cc_library_shared {
+    name: "libhidltranspor8",
+    vendor: true,
+    srcs: ["libhidltranspor8.cpp"],
+    shared_libs: [
+        "libhidlbase",
+        "libutils",
+    ],
+    cflags: ["-Wall", "-Werror"],
+}

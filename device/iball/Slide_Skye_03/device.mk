@@ -111,6 +111,15 @@ PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/rootdir/etc/init.sp7731e_1h10.wifi.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.sp7731e_1h10.wifi.rc \
     $(DEVICE_PATH)/rootdir/bin/wifi-driver.sh:$(TARGET_COPY_OUT_VENDOR)/bin/wifi-driver.sh
 
+# Camera: the stock 8.1 HAL under Android 13's provider, with shims for the 8.1
+# libgui/libhidltransport ABI it uses (libui is libu8 above), the Android 13
+# sensorservice bridge it links, and a camera app (the go config has none)
+PRODUCT_PACKAGES += \
+    libgu8 \
+    libhidltranspor8 \
+    libsensorndkbridge \
+    Aperture
+
 # KGV X Intelligence root daemon (packages/apps/KGVIntelligence/rootd); root is on
 # unless the user turns it off in the app (persist.kgv.root)
 PRODUCT_PACKAGES += \
