@@ -1,0 +1,7 @@
+// libgui stand-in for the stock libcamera_client; see libgu8.cpp.
+cc_library_shared {
+    name: "libgu8",
+    vendor: true,
+    srcs: ["libgu8.cpp"],
+    cflags: ["-Wall", "-Werror"],
+}

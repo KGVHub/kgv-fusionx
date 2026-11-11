@@ -7,7 +7,9 @@
  *   parameters, so the old symbols no longer exist; forward them.
  * - Fence gained a virtual destructor, which moved its fields; the blob
  *   allocates and destroys 8.1-layout Fences itself, so implement the old
- *   constructor, destructor and wait() here on the old layout.
+ *   constructor, destructor and wait() here on the old layout. The ARM C++
+ *   ABI has constructors and destructors return `this`, and the blobs use
+ *   it (the camera HAL frees the destructor's return value), so these do too.
  */
 #include <errno.h>
 #include <stdint.h>
@@ -47,14 +49,16 @@ status_t _ZN7android19GraphicBufferMapper4lockEPK13native_handlejRKNS_4RectEPPv(
 }
 
 // android::Fence::Fence(int)
-void _ZN7android5FenceC1Ei(OldFence* fence, int fd) {
+OldFence* _ZN7android5FenceC1Ei(OldFence* fence, int fd) {
     fence->refCount = 0;
     fence->fd = fd;
+    return fence;
 }
 
 // android::Fence::~Fence()
-void _ZN7android5FenceD1Ev(OldFence* fence) {
+OldFence* _ZN7android5FenceD1Ev(OldFence* fence) {
     if (fence->fd >= 0) close(fence->fd);
+    return fence;
 }
 
 // android::Fence::wait(int)

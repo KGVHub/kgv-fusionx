@@ -29,6 +29,23 @@ rebuilt = re.compile(r"android\.hardware\.(audio|graphics|health|memtrack|light|
 # the WCN chip alive; Android 13's generic supplicant leaves it hung after one
 # scan. Only the HIDL interface libraries come from the Android 13 build.
 rebuilt_files = {"lib/android.hardware.wifi@1.0.so"}
+# The camera provider is Android 13's, so it gets Android 13's interface
+# libraries and default device impl (the 8.1 copies lack the graphics.common
+# toString() the newer ones call, so the provider can't link), and the
+# sensorservice NDK bridge the camera HAL links (the 8.1 one wants old
+# libbase and sensors symbols).
+rebuilt_files |= {"lib/android.hardware.camera.common@1.0.so",
+                  "lib/android.hardware.camera.device@1.0.so",
+                  "lib/android.hardware.camera.device@3.2.so",
+                  "lib/camera.device@1.0-impl.so",
+                  "lib/libsensorndkbridge.so",
+                  "lib/android.frameworks.sensorservice@1.0.so"}
+# The 8.1 OMX service needs the 8.1 libgui and libstagefright, which vendor
+# can't load. While it is declared, mediaserver waits for it forever, and so
+# does MediaProvider (no storage, no saved photos). Leave it out; media uses
+# Android 13's software codecs.
+rebuilt_files |= {"bin/hw/android.hardware.media.omx@1.0-service",
+                  "etc/init/android.hardware.media.omx@1.0-service.rc"}
 skip_top = {"build.prop", "default.prop", "manifest.xml", "compatibility_matrix.xml", "lost+found", "app", "overlay"}
 
 copies, skipped = [], []
@@ -83,6 +100,17 @@ FIXUPS = {
     # which links the real libui.
     "lib/hw/hwcomposer.sp7731e.so": [
         (b"\0libui.so\0", b"\0libu8.so\0")],
+    # Camera HAL: the same libui ABI (8.1 Fences), and shims/libhidltranspor8
+    # for the 8.1 HIDL proxies' toBinder() (power hints pass an IBase token).
+    "lib/hw/camera.sp7731e.so": [
+        (b"\0libui.so\0", b"\0libu8.so\0"),
+        (b"\0libhidltransport.so\0", b"\0libhidltranspor8.so\0")],
+    "lib/libbokeh_depth.so": [
+        (b"\0libui.so\0", b"\0libu8.so\0")],
+    # Its libgui imports serve only the camera1 binder interface, which the HAL
+    # doesn't use; shims/libgu8 stubs them (vendor has no libgui).
+    "lib/libcamera_client.so": [
+        (b"\0libgui.so\0", b"\0libgu8.so\0")],
 }
 
 # (file offset, old bytes, new bytes) patches for code the string fixups can't
