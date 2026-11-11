@@ -36,3 +36,17 @@ CONFIG_SDFAT_FS=y
 # Keep the running config readable from the device.
 CONFIG_IKCONFIG=y
 CONFIG_IKCONFIG_PROC=y
+
+# The 8.1 bootloader's Trusty (2018) makes trusty-log's panic notifier crash
+# (undefined instruction in trusty_dump_logs), which hides the real panic.
+# CONFIG_TRUSTY_LOG is not set
+
+# Boot testing: a panic must restart with mode NORMAL (sysdump would use
+# "panic"), so the bootloader returns to the ROM and the 4.4 kernel can read the
+# ramoops record. Turn hangs into panics.
+# CONFIG_SPRD_SYSDUMP is not set
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_SOFTLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC=y

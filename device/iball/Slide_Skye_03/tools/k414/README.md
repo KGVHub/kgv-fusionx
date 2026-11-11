@@ -24,9 +24,14 @@ The work in this folder is not yet booting. The shipping ROM uses the 4.4.302 ke
 
 ## Status (2026-11-11)
 
+- **4.14.199 boots** (as TWRP in the recovery partition), with the display on (DRM; the 1024x600 `lcd_kgv_iball_mipi` panel shows TWRP), eMMC, USB/adb, Trusty (API 2 against the 2018 TOS) and the WCN SIPC channels.
 - The kernel and DTB build, and so do the four out-of-tree drivers. Their vermagic is `4.14.199+`, with 0 CRC mismatches.
-- The first boot test (in recovery) hung before USB came up, and no log was captured. The 4.14 ramoops area was at another address.
-- Since then, the overlay matches the stock 8.1 memory map, and ramoops is at `0x9e524000`, so the 4.4 ROM can read the log of a failed boot. The next test image also boots with `panic=5`.
+- What it took to boot:
+  - `CONFIG_TRUSTY_LOG` off. Its panic notifier crashed with undefined instructions on the 8.1 bootloader's Trusty, in a loop.
+  - `CONFIG_SPRD_SYSDUMP` off, so a panic restarts in mode NORMAL and goes back to the ROM instead of looping.
+  - Lockup and hung-task panics, plus `panic=5`.
+  - The overlay matches the stock 8.1 memory map, with ramoops at `0x9e524000`.
+- The bootloader's `fastboot boot` ignores the image sent and boots the boot partition, so tests go through the recovery partition.
 
 **Warning:** testing in recovery loops. After `adb reboot recovery`, misc stays set, so a hung kernel boots again on every power cycle. To get out:
 
