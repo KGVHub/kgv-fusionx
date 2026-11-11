@@ -120,6 +120,16 @@ PRODUCT_PACKAGES += \
     libsensorndkbridge \
     Aperture
 
+# Media: Android 13's OMX service (the stock one can't load; see gen-vendor.py)
+PRODUCT_PACKAGES += \
+    android.hardware.media.omx@1.0-service
+
+# The 4.4.83 kernel is below FCM level 3's minimum LTS and kernel configs; skip
+# only that part of the boot-time VINTF check (frameworks/base patch), so the
+# "internal problem" dialog doesn't show on every boot.
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.kgv.vintf_skip_kernel_check=true
+
 # KGV X Intelligence root daemon (packages/apps/KGVIntelligence/rootd); root is on
 # unless the user turns it off in the app (persist.kgv.root)
 PRODUCT_PACKAGES += \

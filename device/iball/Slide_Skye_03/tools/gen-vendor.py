@@ -40,12 +40,14 @@ rebuilt_files |= {"lib/android.hardware.camera.common@1.0.so",
                   "lib/camera.device@1.0-impl.so",
                   "lib/libsensorndkbridge.so",
                   "lib/android.frameworks.sensorservice@1.0.so"}
-# The 8.1 OMX service needs the 8.1 libgui and libstagefright, which vendor
-# can't load. While it is declared, mediaserver waits for it forever, and so
-# does MediaProvider (no storage, no saved photos). Leave it out; media uses
-# Android 13's software codecs.
+# OMX: the 8.1 service needs the 8.1 libgui and libstagefright, which vendor
+# can't load, and while OMX is declared mediaserver (and MediaProvider behind
+# it) waits for it forever. Android 13's service is built instead; it loads
+# the stock libstagefrighthw.so plugin. The 8.1 libavservices_minijail it
+# links wants an old libbase LogMessage.
 rebuilt_files |= {"bin/hw/android.hardware.media.omx@1.0-service",
-                  "etc/init/android.hardware.media.omx@1.0-service.rc"}
+                  "etc/init/android.hardware.media.omx@1.0-service.rc",
+                  "lib/libavservices_minijail.so"}
 skip_top = {"build.prop", "default.prop", "manifest.xml", "compatibility_matrix.xml", "lost+found", "app", "overlay"}
 
 copies, skipped = [], []
