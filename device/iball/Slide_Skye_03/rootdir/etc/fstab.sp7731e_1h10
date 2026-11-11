@@ -7,3 +7,4 @@
 /dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/misc       /misc        emmc   defaults                                                  defaults
 /devices/platform/soc/soc:ap-ahb/20300000.sdio/mmc_host/mmc1/mmc1:*/block/mmcblk1 auto auto defaults voldmanaged=sdcard1:auto
 /devices/platform/soc/soc:ap-ahb/20200000.usb/musb-hdrc.0.auto/usb*  auto         auto   defaults                                                  voldmanaged=usb:auto
+/dev/block/zram0                                                    none         swap   defaults                                                  zramsize=50%,max_comp_streams=4

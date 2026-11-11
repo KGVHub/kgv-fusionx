@@ -1,0 +1,16 @@
+// Android 13 audio HAL ABI over the stock 8.1 audio.primary.sp7731e.so; see audio_wrap.c.
+cc_library_shared {
+    name: "audio.primary.sp7731e_a13",
+    vendor: true,
+    relative_install_path: "hw",
+    srcs: ["audio_wrap.c"],
+    shared_libs: [
+        "libdl",
+        "liblog",
+    ],
+    header_libs: [
+        "libhardware_headers",
+        "libaudio_system_headers",
+    ],
+    cflags: ["-Wall", "-Werror"],
+}

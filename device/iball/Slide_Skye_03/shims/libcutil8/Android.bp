@@ -1,0 +1,8 @@
+// 8.1 libcutils ABI for the stock audio HAL; see libcutil8.cpp.
+cc_library_shared {
+    name: "libcutil8",
+    vendor: true,
+    srcs: ["libcutil8.cpp"],
+    shared_libs: ["libcutils"],
+    cflags: ["-Wall", "-Werror"],
+}
