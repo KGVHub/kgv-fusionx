@@ -1,5 +1,9 @@
-description: Unisoc 4.14 BSP kernel for pike2 (iBall Slide Skye 03), Nokia C1 2E config + KGV fragment
+description: Unisoc 4.14 BSP kernel for pike2 (iBall Slide Skye 03), Nokia C1 2E config + KGV fragment, plus out-of-tree drivers
 max_active_runs: 1
 steps:
   - name: build
     command: bash /mypool/claude/mainline/a11/k414.sh
+  - name: modules
+    command: bash /mypool/claude/mainline/a11/mod414.sh
+    depends:
+      - build
