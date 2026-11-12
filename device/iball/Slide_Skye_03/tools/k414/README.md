@@ -20,9 +20,10 @@ The work in this folder is not yet booting. The shipping ROM uses the 4.4.302 ke
 | `dagu-k414.yaml` | The Dagu DAG that runs `k414.sh`, then `mod414.sh` |
 | `test-in-recovery.sh` | Flashes a test image (4.14 kernel + TWRP ramdisk) to the recovery partition and boots it |
 | `unbrick-recovery.sh` | Restores recovery from SPD download mode |
+| `gfx414/` | The 4.14 graphics overlay for the 4.4 ROM: `k414.rc`, `stage.sh`, `install-twrp.sh` |
 | `spd_dump-line-state-nonfatal.patch` | This tablet's bootrom rejects the CDC line-state request, so the patch makes that failure non-fatal |
 
-## Status (2026-11-11)
+## Status (2026-11-12)
 
 - **4.14.199 boots** (as TWRP in the recovery partition), with the display on (DRM; the 1024x600 `lcd_kgv_iball_mipi` panel shows TWRP), eMMC, USB/adb, Trusty (API 2 against the 2018 TOS) and the WCN SIPC channels.
 - The kernel and DTB build, and so do the four out-of-tree drivers. Their vermagic is `4.14.199+`, with 0 CRC mismatches.
@@ -33,7 +34,12 @@ The work in this folder is not yet booting. The shipping ROM uses the 4.4.302 ke
   - The overlay matches the stock 8.1 memory map, with ramoops at `0x9e524000`.
 - The bootloader's `fastboot boot` ignores the image sent and boots the boot partition, so tests go through the recovery partition.
 
-- **The 4.4 ROM on 4.14 doesn't boot yet.** It restarts in a loop before USB comes up and leaves no panic record, which points to Android init rebooting rather than a kernel crash. The 8.1 vendor blobs expect the 4.4 kernel (ADF display, Mali r21).
+- **The 4.4 ROM boots on 4.14** (2026-11-12, to `sys.boot_completed` and the launcher; no wallpaper yet). What it took:
+  - **Binder protocol 7.** The ROM is built with `TARGET_USES_64_BIT_BINDER := false`, so every service aborted with "Binder driver protocol(8) does not match user space protocol(7)". The kernel brings back `CONFIG_ANDROID_BINDER_IPC_32BIT` (the uapi header still has it). This was the "bootloop": init kept rebooting into the bootloader logo.
+  - **Graphics.** The 8.1 hwcomposer needs ADF and Mali r21. On 4.14, `gfx414/k414.rc` bind-mounts the Nokia C1 2E DRM hwcomposer, ION gralloc, Mali r28p0 `libGLES_mali.so` and `libmemion.so` from `/vendor/k414` over the stock files, and `/vendor/k414/modules` over `/vendor/lib/modules`. It only acts with `androidboot.k414=1` in the DTB bootargs, so the 4.4 kernel keeps the stock stack. Build the overlay with `gfx414/stage.sh` and install it from TWRP with `gfx414/install-twrp.sh`.
+  - The bootargs also need `androidboot.selinux=permissive`: the bootloader uses the DTB's `/chosen/bootargs`, not the boot header cmdline.
+  - **Wi-Fi is left out:** `sprdwl_ng` panics in `sprdwl_sipc_msg_send` (memcpy into the SIPC buffer) when Wi-Fi starts.
+- Debugging a loop: a 35 MB `write_part boot` from download mode wipes the ramoops area. Write only `misc` (`boot-recovery`), let the 4.14 TWRP read `/sys/fs/pstore`, then restore boot from TWRP. The watchdog stops in the kernel (`sprd-adi` PMIC watchdog, `sprd_wdt` AP watchdog) turned out not to be needed: both were already off.
 - **A11 mode** (`A11=1` on the `iball` DAG, product `lineage_Slide_Skye_03_a11`): boots kernel 4.14 with the Nokia C1 2E Android 11 vendor (`a11/mk-vendor.sh`) over VNDK 30. It is wired in but hasn't been built as a ROM yet.
 
 **Warning:** testing in recovery loops. After `adb reboot recovery`, misc stays set, so a hung kernel boots again on every power cycle. To get out:
