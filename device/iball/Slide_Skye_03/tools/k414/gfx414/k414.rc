@@ -13,6 +13,10 @@ on early-init && property:ro.boot.k414=1
     # ones are ADF): without them the composer can't use hardware overlays.
     mount none /vendor/k414/lib/hw/dpu.sp7731e.so /vendor/lib/hw/dpu.sp7731e.so bind
     mount none /vendor/k414/lib/hw/gsp.sp7731e.so /vendor/lib/hw/gsp.sp7731e.so bind
+    # GSP scales the wallpaper in place: its output overwrote part of the
+    # wallpaper buffer (visible in screenshots/recents). Keep DPU overlays
+    # only; the wallpaper is GPU-composed into the framebuffer target.
+    setprop debug.hwc.gsp.disable 1
 
 # Performance on 4.14 (measured with perf/jank.sh, app drawer scroll):
 # the GPU's simple_ondemand sat at 384 MHz; Unisoc's dynamic CPU hotplug kept
