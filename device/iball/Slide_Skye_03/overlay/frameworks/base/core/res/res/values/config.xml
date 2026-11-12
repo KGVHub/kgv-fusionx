@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    iBall Slide Skye 03 (1024x600, SC7731E).
+    The display controller (dpu-lite-r1p0) can only show unscaled layers. With
+    the wallpaper at screen size and no wallpaper zoom, every home-screen layer
+    fits a hardware overlay plane and the Mali GPU only draws app content.
+-->
+<resources>
+    <!-- No wallpaper zoom-out during transitions (the default 1.10 scales
+         the wallpaper layer at rest as well). -->
+    <item name="config_wallpaperMaxScale" format="float" type="dimen">1</item>
+</resources>
