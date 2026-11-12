@@ -1,0 +1,11 @@
+# KGV: kernel 4.14 mode (androidboot.k414=1 from the 4.14 boot image's
+# bootargs). The 8.1 graphics stack needs ADF and Mali r21 (kernel 4.4); on
+# 4.14 the Nokia C1 2E (Android 11) DRM hwcomposer, ION gralloc and Mali
+# r28p0 user driver are bind-mounted over the stock files, and the 4.14
+# kernel modules over /vendor/lib/modules. On 4.4 nothing changes.
+on early-init && property:ro.boot.k414=1
+    mount none /vendor/k414/modules /vendor/lib/modules bind
+    mount none /vendor/k414/lib/hw/gralloc.sp7731e.so /vendor/lib/hw/gralloc.sp7731e.so bind
+    mount none /vendor/k414/lib/hw/hwcomposer.sp7731e.so /vendor/lib/hw/hwcomposer.sp7731e.so bind
+    mount none /vendor/k414/lib/egl/libGLES_mali.so /vendor/lib/egl/libGLES_mali.so bind
+    mount none /vendor/k414/lib/libmemion.so /vendor/lib/libmemion.so bind
