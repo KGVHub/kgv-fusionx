@@ -3,10 +3,12 @@
 # Output: /mypool/claude/mainline/a11/out-414/arch/arm/boot/Image and dtbs.
 set -eu
 A=/mypool/claude/mainline/a11
-K=$A/kernel-unisoc-4.14
-O=$A/out-414
+# K414_SRC/K414_OUT select another tree (e.g. the 4.14 LTS merge worktree).
+K=${K414_SRC:-$A/kernel-unisoc-4.14}
+O=${K414_OUT:-$A/out-414}
+LOG=$A/build-$(basename "$O").log
 cd "$K"
-git rev-parse --verify -q kgv/pike2-4.14 >/dev/null || git checkout -q -b kgv/pike2-4.14
+[ -n "${K414_SRC:-}" ] || git rev-parse --verify -q kgv/pike2-4.14 >/dev/null || git checkout -q -b kgv/pike2-4.14
 mkdir -p "$O"
 cp $A/nokia_iru_dump/ikconfig "$O/.config"
 # Apply the fragment: drop any existing line for each option, then append ours.
@@ -22,14 +24,18 @@ export PATH=/mypool/claude/fusionx/prebuilts/clang/host/linux-x86/clang-r450784d
 # clang 14 + the GCC 4.9 GNU assembler: avoid DWARF 5 .file/md5 and .addrsig,
 # which that assembler can't parse.
 M="make O=$O ARCH=arm CC=clang CLANG_TRIPLE=arm-linux-gnueabi- CROSS_COMPILE=arm-linux-androideabi-"
+# The 4.14.y Spectre-BHB vectors use an OVERLAY section, which ld.gold (the
+# toolchain's default ld) can't parse: K414_LD=bfd selects GNU ld.
+[ "${K414_LD:-}" = bfd ] && M="$M LD=arm-linux-androideabi-ld.bfd"
 export KCFLAGS="-gdwarf-4 -fno-dwarf-directory-asm -fno-addrsig -Wno-error"
 $M olddefconfig >/dev/null 2>&1
 echo "== fragment check (lines missing from the final config):"
 grep -E '^(CONFIG_|# CONFIG_)' $A/pike2-kgv.fragment | while read -r l; do grep -qxF "$l" "$O/.config" || echo "  $l"; done
-echo "== building Image + dtbs (log: $A/build-414.log)"
-if $M -k -j6 Image dtbs > $A/build-414.log 2>&1; then echo "BUILD OK"; else echo "BUILD FAILED"; fi
-grep -E ' error:|Error [0-9]' $A/build-414.log | sort -u | head -40
+echo "== building Image + dtbs (log: $LOG)"
+if $M -k -j6 Image dtbs > $LOG 2>&1; then echo "BUILD OK"; else echo "BUILD FAILED"; fi
+grep -E ' error:|Error [0-9]' $LOG | sort -u | head -40
 ls -la "$O/arch/arm/boot/Image" 2>/dev/null; ls "$O/arch/arm/boot/dts/" 2>/dev/null | grep -iE '7731|pike' || true
 
+[ -n "${K414_SRC:-}" ] && exit 0
 echo "== merged iBall DTB"
 bash /mypool/claude/mainline/a11/dtb-iball.sh 2>&1 | tail -8

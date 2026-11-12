@@ -4,19 +4,22 @@
 # Output: /mypool/claude/mainline/a11/modules-414/*.ko
 set -u
 A=/mypool/claude/mainline/a11
-K=$A/kernel-unisoc-4.14
-O=$A/out-414
+# K414_SRC/K414_OUT/K414_MODS select another tree (e.g. the 4.14 LTS merge).
+K=${K414_SRC:-$A/kernel-unisoc-4.14}
+O=${K414_OUT:-$A/out-414}
 S=$A/sprd_bsp_modules
-OUT=$A/modules-414; mkdir -p $OUT; rm -f $OUT/*.ko
+OUT=${K414_MODS:-$A/modules-414}; mkdir -p $OUT; rm -f $OUT/*.ko
+STAMP=$(mktemp); trap 'rm -f $STAMP' EXIT
 export PATH=/mypool/claude/fusionx/prebuilts/clang/host/linux-x86/clang-r450784d/bin:/mypool/claude/fusionx/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin:$PATH
 export KCFLAGS="-gdwarf-4 -fno-dwarf-directory-asm -fno-addrsig -Wno-error"
 M="make -C $K O=$O ARCH=arm CC=clang CLANG_TRIPLE=arm-linux-gnueabi- CROSS_COMPILE=arm-linux-androideabi- -j6"
+[ "${K414_LD:-}" = bfd ] && M="$M LD=arm-linux-androideabi-ld.bfd"
 fail=0
 build() { # name dir extra-args...
   local name=$1 dir=$2; shift 2
   echo "== $name"
   if $M M=$dir "$@" modules > $A/mod-$name.log 2>&1; then
-    find $dir -name '*.ko' -newer $A/mod414.sh -exec cp {} $OUT/ \; ; echo "   OK"
+    find $dir -name '*.ko' -exec cp {} $OUT/ \; ; echo "   OK"
   else
     echo "   FAILED (log: $A/mod-$name.log)"; grep -E ' error:|Error [0-9]' $A/mod-$name.log | sort -u | head -15; fail=1
   fi

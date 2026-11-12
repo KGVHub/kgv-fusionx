@@ -1,0 +1,18 @@
+description: 4.14 LTS merge (kgv/pike2-4.14-lts, worktree kernel-414-lts) for pike2 - Image + dtbs into out-414-lts
+max_active_runs: 1
+steps:
+  - name: build
+    command: bash /mypool/claude/mainline/a11/k414.sh
+    env:
+      - K414_SRC: /mypool/claude/mainline/a11/kernel-414-lts
+      - K414_OUT: /mypool/claude/mainline/a11/out-414-lts
+      - K414_LD: bfd
+  - name: modules
+    command: bash /mypool/claude/mainline/a11/mod414.sh
+    depends:
+      - build
+    env:
+      - K414_SRC: /mypool/claude/mainline/a11/kernel-414-lts
+      - K414_OUT: /mypool/claude/mainline/a11/out-414-lts
+      - K414_MODS: /mypool/claude/mainline/a11/modules-414-lts
+      - K414_LD: bfd

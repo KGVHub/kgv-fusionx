@@ -1,6 +1,9 @@
 # KGV FusionX for the iBall Slide Skye 03 (Unisoc SC7731E, 1 GB, ARM32 only).
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+# Android Go tuning for this 1 GB tablet: Dalvik heap limits, lmkd pressure,
+# speed-profile system_server, Go hardware feature list.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/go_defaults.mk)
 $(call inherit-product, device/iball/Slide_Skye_03/device.mk)
 
 # Lineage Go: the tablet has 900 MB of RAM and a 1.3 GB system partition.

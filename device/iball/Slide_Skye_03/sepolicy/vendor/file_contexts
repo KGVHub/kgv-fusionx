@@ -1,1 +1,8 @@
 /dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/(system|vendor|userdata|cache) u:object_r:block_device:s0
+
+# Kernel 4.14 overlay (tools/k414/gfx414)
+/vendor/k414(/.*)?                                   u:object_r:vendor_file:s0
+/vendor/k414/lib/hw/gralloc\.sp7731e\.so             u:object_r:same_process_hal_file:s0
+/vendor/k414/lib/egl/libGLES_mali\.so                u:object_r:same_process_hal_file:s0
+/vendor/k414/lib/libmemion\.so                       u:object_r:same_process_hal_file:s0
+/vendor/lib/libdrm\.so                               u:object_r:same_process_hal_file:s0

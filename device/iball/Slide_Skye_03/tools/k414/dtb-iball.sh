@@ -17,7 +17,9 @@ $DTC -@ -q -I dts -O dtb -o $W/base.dtb $W/base.pre
 $DTC -@ -q -I dts -O dtb -o $W/ovl.dtbo $W/ovl.pre
 fdtoverlay -i $W/base.dtb -o $W/iball.dtb $W/ovl.dtbo
 # bootargs: the stock ones plus the 4.14 panel name.
-STOCK="earlycon=sprd_serial,0x70100000,115200n8 loglevel=1 console=ttyS1,115200n8 init=/init root=/dev/ram0 rw androidboot.hardware=sp7731e_1h10"
+# No UART console: nothing reads it and 115200-baud printk slows boot; with
+# loglevel=7 the full log still reaches the pstore console (console-ramoops).
+STOCK="loglevel=7 init=/init root=/dev/ram0 rw androidboot.hardware=sp7731e_1h10"
 fdtput -c $W/iball.dtb /chosen 2>/dev/null || true
 # panic=5: restart on a panic; selinux permissive and k414=1 for the 4.4 ROM
 # on 4.14 (gfx414/k414.rc). The bootloader uses these, not the header cmdline.

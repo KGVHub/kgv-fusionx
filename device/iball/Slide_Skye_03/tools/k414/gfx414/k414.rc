@@ -18,3 +18,8 @@ on boot && property:ro.boot.k414=1
     write /sys/class/devfreq/60000000.gpu/max_freq 600000000
     write /sys/class/devfreq/60000000.gpu/min_freq 533000000
     write /sys/devices/system/cpu/cpuhotplug/dynamic_load_disable 1
+
+# A kernel with another version stamp (e.g. 4.14.336) brings its own module
+# set: androidboot.k414mods=<name> mounts /vendor/k414/modules-<name> instead.
+on early-init && property:ro.boot.k414mods=336
+    mount none /vendor/k414/modules-336 /vendor/lib/modules bind
