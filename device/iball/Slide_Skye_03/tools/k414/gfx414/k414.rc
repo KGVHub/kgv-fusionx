@@ -9,3 +9,12 @@ on early-init && property:ro.boot.k414=1
     mount none /vendor/k414/lib/hw/hwcomposer.sp7731e.so /vendor/lib/hw/hwcomposer.sp7731e.so bind
     mount none /vendor/k414/lib/egl/libGLES_mali.so /vendor/lib/egl/libGLES_mali.so bind
     mount none /vendor/k414/lib/libmemion.so /vendor/lib/libmemion.so bind
+
+# Performance on 4.14 (measured with perf/jank.sh, app drawer scroll):
+# the GPU's simple_ondemand sat at 384 MHz; Unisoc's dynamic CPU hotplug kept
+# failing to unplug cpu3. GPU floor 533 MHz and hotplug off cut the 90th
+# percentile frame from 97 to ~61 ms.
+on boot && property:ro.boot.k414=1
+    write /sys/class/devfreq/60000000.gpu/max_freq 600000000
+    write /sys/class/devfreq/60000000.gpu/min_freq 533000000
+    write /sys/devices/system/cpu/cpuhotplug/dynamic_load_disable 1

@@ -57,3 +57,10 @@ CONFIG_ANDROID_BINDER_IPC_32BIT=y
 # PMIC linear charger: charger-manager (cm-chargers = "sc2720_charger") needs it
 # to register the "battery" supply Android reads.
 CONFIG_CHARGER_SC2720=y
+
+# Performance: -O2 instead of -Os, and drop per-scheduling-event stats and
+# list-corruption checks.
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_DEBUG_LIST is not set
