@@ -15,9 +15,9 @@ fi
 until [ "$($A get-state 2>/dev/null)" = recovery ]; do sleep 2; done; sleep 5
 echo "$(date +%T) in TWRP"
 $A shell 'umount /system /vendor /system_root 2>/dev/null; true'
-# system: stream all but the last 10 MB (adb exec-in drops the final block
+# system: stream all but the last 32 MB (adb exec-in drops up to ~10 MB at the end
 # when the stream closes), then push and write the tail. vendor fits in /tmp.
-img=$P/system-signed.img; size=$(stat -c %s $img); tailmb=10
+img=$P/system-signed.img; size=$(stat -c %s $img); tailmb=32
 head -c $((size - tailmb*1048576)) $img | $A exec-in "dd of=/dev/block/by-name/system bs=1048576"
 T=$(mktemp); tail -c $((tailmb*1048576)) $img > $T; $A push $T /tmp/sys-tail.bin >/dev/null; rm -f $T
 $A shell "dd if=/tmp/sys-tail.bin of=/dev/block/by-name/system bs=1048576 seek=$((size/1048576 - tailmb)) 2>/dev/null; rm /tmp/sys-tail.bin; sync"
