@@ -3,9 +3,11 @@
 # on kernel 4.14: the Nokia C1 2E (Android 11) DRM hwcomposer, ION gralloc,
 # Mali r28p0 GLES and libmemion (bind-mounted over the stock files by
 # k414.rc), the libraries they add, and the 4.14 kernel modules.
-# usage: stage.sh <nokia dump root> <4.14 modules dir> <out dir>
+# usage: stage.sh <nokia dump root> <4.14 modules dir> <out dir> [<4.14.336 modules dir>]
+# The optional LTS module set goes to /vendor/k414/modules-336 (k414.rc mounts it
+# when the boot image sets androidboot.k414mods=336).
 set -euo pipefail
-N=$1 MODS=$2 OUT=$3
+N=$1 MODS=$2 OUT=$3 MODS_LTS=${4:-}
 V=$N/vendor/lib
 STRIP=${STRIP:-llvm-strip}
 rm -rf "$OUT"; mkdir -p "$OUT"/k414/lib/hw "$OUT"/k414/lib/egl "$OUT"/k414/modules "$OUT"/lib-new
@@ -35,4 +37,10 @@ cp "$N"/system/system/lib/android.hardware.power-V1-ndk_platform.so "$OUT"/lib-n
 for m in "$MODS"/*.ko; do
     "$STRIP" --strip-debug -o "$OUT/k414/modules/$(basename "$m")" "$m"
 done
+if [ -n "$MODS_LTS" ]; then
+    mkdir -p "$OUT"/k414/modules-336
+    for m in "$MODS_LTS"/*.ko; do
+        "$STRIP" --strip-debug -o "$OUT/k414/modules-336/$(basename "$m")" "$m"
+    done
+fi
 find "$OUT" -type f | sort
