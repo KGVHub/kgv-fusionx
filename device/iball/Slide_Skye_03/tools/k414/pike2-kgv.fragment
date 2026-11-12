@@ -53,3 +53,7 @@ CONFIG_BOOTPARAM_HUNG_TASK_PANIC=y
 
 # 32-bit binder protocol (v7): the ROM is built with TARGET_USES_64_BIT_BINDER := false
 CONFIG_ANDROID_BINDER_IPC_32BIT=y
+
+# PMIC linear charger: charger-manager (cm-chargers = "sc2720_charger") needs it
+# to register the "battery" supply Android reads.
+CONFIG_CHARGER_SC2720=y

@@ -19,7 +19,9 @@ fdtoverlay -i $W/base.dtb -o $W/iball.dtb $W/ovl.dtbo
 # bootargs: the stock ones plus the 4.14 panel name.
 STOCK="earlycon=sprd_serial,0x70100000,115200n8 loglevel=1 console=ttyS1,115200n8 init=/init root=/dev/ram0 rw androidboot.hardware=sp7731e_1h10"
 fdtput -c $W/iball.dtb /chosen 2>/dev/null || true
-fdtput -t s $W/iball.dtb /chosen bootargs "$STOCK lcd_name=lcd_kgv_iball_mipi"
+# panic=5: restart on a panic; selinux permissive and k414=1 for the 4.4 ROM
+# on 4.14 (gfx414/k414.rc). The bootloader uses these, not the header cmdline.
+fdtput -t s $W/iball.dtb /chosen bootargs "$STOCK lcd_name=lcd_kgv_iball_mipi panic=5 androidboot.selinux=permissive androidboot.k414=1"
 ls -la $W/iball.dtb
 fdtget $W/iball.dtb / model
 fdtget $W/iball.dtb /chosen bootargs

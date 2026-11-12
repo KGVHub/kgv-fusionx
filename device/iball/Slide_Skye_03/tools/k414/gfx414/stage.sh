@@ -16,9 +16,7 @@ cp "$V"/libmemion.so "$OUT"/k414/lib/
 # client (and its AIDL stubs; the power service itself isn't there).
 cp "$V"/libdrm.so "$V"/libpowerhal_cli.so "$V"/vendor.unisoc.hardware.power-V1-ndk_platform.so "$OUT"/lib-new/
 cp "$N"/system/system/lib/android.hardware.power-V1-ndk_platform.so "$OUT"/lib-new/
-# sprdwl_ng panics in sprdwl_sipc_msg_send on 4.14; left out until fixed.
 for m in "$MODS"/*.ko; do
-    [ "$(basename "$m")" = sprdwl_ng.ko ] && continue
     "$STRIP" --strip-debug -o "$OUT/k414/modules/$(basename "$m")" "$m"
 done
 find "$OUT" -type f | sort
