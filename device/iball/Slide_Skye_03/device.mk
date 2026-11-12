@@ -9,6 +9,10 @@ PRODUCT_AAPT_PREF_CONFIG := mdpi
 PRODUCT_CHARACTERISTICS := tablet
 
 DEVICE_PACKAGE_OVERLAYS += $(DEVICE_PATH)/overlay
+# Also as a product overlay, ahead of vendor/lineage/overlay/common (product
+# overlays win over device overlays; earlier entries win): the 1024x600
+# default wallpaper must replace Lineage's 1920x1920 one.
+PRODUCT_PACKAGE_OVERLAYS += $(DEVICE_PATH)/overlay
 
 # fstab: the ramdisk copy is read by first-stage init, the vendor copy by mount_all.
 ifeq ($(TARGET_PRODUCT),lineage_Slide_Skye_03_a11)
