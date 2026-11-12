@@ -163,3 +163,15 @@ PRODUCT_SYSTEM_PROPERTIES += \
 
 # Stock blobs
 $(call inherit-product, vendor/iball/Slide_Skye_03/Slide_Skye_03-vendor.mk)
+
+# Kernel 4.14 overlay (tools/k414/gfx414): the Nokia C1 2E DRM hwcomposer, ION
+# gralloc, Mali r28p0 GLES and 4.14 modules in /vendor/k414, bind-mounted by
+# k414.rc only when the 4.14 boot image sets androidboot.k414=1. Staged into
+# the (unpublished) vendor tree by gfx414/stage.sh.
+K414_OVL := vendor/iball/Slide_Skye_03/k414-overlay
+ifneq ($(wildcard $(K414_OVL)/k414),)
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(patsubst $(K414_OVL)/k414/%,%,$(shell find $(K414_OVL)/k414 -type f)),$(K414_OVL)/k414/$(f):$(TARGET_COPY_OUT_VENDOR)/k414/$(f)) \
+    $(foreach f,$(notdir $(wildcard $(K414_OVL)/lib-new/*.so)),$(K414_OVL)/lib-new/$(f):$(TARGET_COPY_OUT_VENDOR)/lib/$(f)) \
+    $(DEVICE_PATH)/tools/k414/gfx414/k414.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/k414.rc
+endif

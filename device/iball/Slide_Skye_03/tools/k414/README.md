@@ -52,3 +52,28 @@ The work in this folder is not yet booting. The shipping ROM uses the 4.4.302 ke
 1. Run `unbrick-recovery.sh` with the backed-up TWRP.
 2. Press Power + RESET.
 3. Hold Vol Down and plug in USB.
+
+## 4.14.336 LTS (kernel branch `kgv/pike2-4.14-lts`)
+
+Upstream `linux-4.14.y` up to the last release, 4.14.336, is merged on top of the Unisoc tree. The vendor drop had no history, so its tree was re-parented onto `v4.14.199` before the merge. 74 files conflicted. The main choices:
+
+- **RNG.** `random.c` comes from upstream; its rework already includes the jitter-entropy wait. `lib/chacha20` stays alongside ACK's `chacha`. Android's `%p` hashing in `vsprintf` uses `register_random_ready_notifier()`.
+- **Binder and SELinux.** ACK's binder logic, with upstream's cred-based hooks on ACK's `selinux_state` API.
+- **tty.** `tty_jobctrl` uses upstream's locking. Keeping the vendor's inner lock would deadlock `tiocspgrp`.
+- **xfrm and af_key.** The vendor's `u32 mark` + `if_id` lookup API is kept, so upstream's mark-mask matching fix is not in.
+- **Everything else.** For ext4, f2fs, fscrypt, fuse, mm, sched, USB and MMC, the vendor/ACK code stays, with upstream fixes applied on top. arm64, x86 and the drivers this board doesn't build come from upstream.
+
+Building it:
+
+- Use GNU ld (`K414_LD=bfd`). ld.gold can't parse the Spectre-BHB `OVERLAY` in the ARM linker script.
+- `dagu-k414lts.yaml` builds the Image and dtbs into `out-414-lts`, then the modules into `modules-414-lts`. The Bluetooth module needs `patches/sprd_bsp_modules-0001-*`, because 4.14.y removed `tty_schedule_flip()`. All four modules have 0 CRC mismatches.
+- The modules are installed in `/vendor/k414/modules-336`. The DTB in `prebuilt/k414-lts` adds `androidboot.k414mods=336`, which makes `k414.rc` bind-mount that set instead of the 4.14.199 one.
+
+Status (2026-11-12): it boots, with Wi-Fi (connected), charging, all modules, BT on, no kernel warnings, and the boot animation at 24 s. `prebuilt/k414` stays on 4.14.199 as the fallback.
+
+## Go mode and flashing
+
+- `lineage_Slide_Skye_03.mk` inherits `go_defaults.mk`. BoardConfig sets `TARGET_SYSTEM_PROP` with `:=`, which drops the Go prop file, so the Go props (Dalvik heap 128m/256m and the `ro.lmk.*` tuning) are listed in `system.prop`.
+- The 4.14 overlay is part of the vendor image: device.mk copies `vendor/iball/Slide_Skye_03/k414-overlay` (made by `gfx414/stage.sh`), and `sepolicy/vendor/file_contexts` labels it.
+- `flash-rom-twrp.sh` flashes system and vendor from TWRP. adb `exec-in` drops the last block, so the final 10 MB of system is written from a pushed file.
+- `jank.sh` and `membw.sh` are the smoothness probes. Measured on the app-drawer scroll: 4.4 has a median frame of 48 ms; 4.14 with a 533 MHz GPU floor and the Unisoc hotplug daemon off has 40 ms. Animations are set to 0.5x.

@@ -1,3 +1,13 @@
 ro.sf.lcd_density=160
 ro.sf.hwrotation=270
 qemu.hw.mainkeys=0
+
+# Android Go defaults (build/make/target/board/go_defaults*.prop). BoardConfig
+# sets TARGET_SYSTEM_PROP with :=, so go_defaults.mk can't add them itself.
+ro.lmk.critical_upgrade=true
+ro.lmk.upgrade_pressure=40
+ro.lmk.downgrade_pressure=60
+ro.lmk.kill_heaviest_task=false
+pm.dexopt.downgrade_after_inactive_days=10
+dalvik.vm.heapgrowthlimit=128m
+dalvik.vm.heapsize=256m

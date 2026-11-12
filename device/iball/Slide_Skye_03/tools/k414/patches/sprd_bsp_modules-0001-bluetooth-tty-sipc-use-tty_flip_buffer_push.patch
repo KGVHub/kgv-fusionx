@@ -1,0 +1,29 @@
+From 951eba5dc71e35498f07501e7f5575f949e34298 Mon Sep 17 00:00:00 2001
+From: kgvarunkanth <kgvarunkanth@gmail.com>
+Date: Thu, 12 Nov 2026 17:15:50 +0530
+Subject: [PATCH] bluetooth: tty-sipc: use tty_flip_buffer_push()
+
+4.14.y stable removed tty_schedule_flip(); tty_flip_buffer_push() is the
+same operation and exists in every 4.14.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ wcn/bluetooth/driver/tty-sipc/tty.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/wcn/bluetooth/driver/tty-sipc/tty.c b/wcn/bluetooth/driver/tty-sipc/tty.c
+index 73d30fb..f2c1b0c 100644
+--- a/wcn/bluetooth/driver/tty-sipc/tty.c
++++ b/wcn/bluetooth/driver/tty-sipc/tty.c
+@@ -212,7 +212,7 @@ static void stty_handler (int event, void *data)
+ 					if(retry_count != 10)
+ 						retry_count = 10;
+ 				}
+-				tty_schedule_flip(stty->port);
++				tty_flip_buffer_push(stty->port);
+ 			}
+ 			mutex_unlock(&(stty->stat_lock));
+ 		} while(cnt == STTY_MAX_DATA_LEN);
+-- 
+2.53.0
+
